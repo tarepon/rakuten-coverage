@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "id": "arena_001", "name": "有明アリーナ" }, "geometry": { "type": "Point", "coordinates": [139.7850, 35.6303] } },
+    { "type": "Feature", "properties": { "id": "arena_002", "name": "大阪城ホール" }, "geometry": { "type": "Point", "coordinates": [135.5262, 34.6874] } },
+    { "type": "Feature", "properties": { "id": "arena_003", "name": "日本ガイシホール" }, "geometry": { "type": "Point", "coordinates": [136.9404, 35.1082] } },
+    { "type": "Feature", "properties": { "id": "arena_004", "name": "北海きたえーる" }, "geometry": { "type": "Point", "coordinates": [141.3544, 43.0457] } },
+    { "type": "Feature", "properties": { "id": "arena_005", "name": "宮城県総合運動公園総合体育館" }, "geometry": { "type": "Point", "coordinates": [140.8742, 38.3219] } }
+  ]
+}

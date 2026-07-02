@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "id": "michi_001", "name": "道の駅 うつのみやろまんちっく村" }, "geometry": { "type": "Point", "coordinates": [139.8034, 36.6219] } },
+    { "type": "Feature", "properties": { "id": "michi_002", "name": "道の駅 富士川楽座" }, "geometry": { "type": "Point", "coordinates": [138.5083, 35.1856] } },
+    { "type": "Feature", "properties": { "id": "michi_003", "name": "道の駅 なかさつない" }, "geometry": { "type": "Point", "coordinates": [143.1547, 42.6804] } },
+    { "type": "Feature", "properties": { "id": "michi_004", "name": "道の駅 萩しーまーと" }, "geometry": { "type": "Point", "coordinates": [131.4003, 34.4082] } },
+    { "type": "Feature", "properties": { "id": "michi_005", "name": "道の駅 伊良湖クリスタルポルト" }, "geometry": { "type": "Point", "coordinates": [137.0267, 34.5780] } }
+  ]
+}

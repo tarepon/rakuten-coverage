@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    API 31+ 向けデータ抽出ルール（クラウドバックアップ・デバイス間転送）。
+    位置情報・cellId を含む DB を除外する。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="rakuten_coverage.db" />
+        <exclude domain="cache" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="rakuten_coverage.db" />
+        <exclude domain="cache" />
+    </device-transfer>
+</data-extraction-rules>

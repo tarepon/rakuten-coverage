@@ -1,0 +1,118 @@
+# 引き継ぎメモ — Rakuten Coverage App
+
+## プロジェクト概要
+
+楽天モバイルの電波強度を計測・記録する Android アプリ（個人用プロトタイプ）。
+
+- 言語: Kotlin + Jetpack Compose (Material3)
+- 地図: OSMDroid
+- DB: Room (SQLite)、現在バージョン4
+- GPS: FusedLocationProviderClient
+- リポジトリ: `/Users/osamu.kawakami/claude-practice/`
+- アプリディレクトリ: `rakuten-coverage/`
+
+---
+
+## 現在の状態（2026-06-27時点）
+
+### 動作している機能
+- GPS + 電波（networkType / band / RSSI）+ RTT の計測・DB保存
+- OSMDroid マップに計測ドットを色分け表示
+- キャラクター（マスコット）が電波状況に反応して表示
+- 計測インターバル選択（15s / 30s / 60s）
+- 機内モード・SIMなし検知（スタンプ不正防止）
+- 重複記録スキップ：同じ場所（10m以内）+ 同じnetworkType + RSSI（±5dBm）は保存しない
+- 履歴画面・スタンプ画面・コレクション（モンスター図鑑）画面
+- ホーム画面ウィジェット（CharacterWidget）
+
+### SignalLevel enum（8種類）
+```
+MILLIMETER_WAVE > PLATINUM_5G > FIVE_G > PLATINUM > LTE > WEAK > NO_SIGNAL > AIRPLANE_MODE / NO_SIM
+```
+
+---
+
+## 重要な実装メモ
+
+### 重複チェック（MapViewModel.isDuplicate）
+```kotlin
+// 10m以内 + 同じnetworkType + RSSI ±5dBm → スキップ
+private fun isDuplicate(a: Measurement, b: Measurement): Boolean
+```
+
+### MeasurementSession.collect()
+- DB保存は**しない**（返り値のMeasurementをViewModelがdupチェック後にinsert）
+- GPS取得失敗時はnullを返す
+
+### H3ライブラリ → 削除済み
+- `com.uber.h3:h3` はAndroidでネイティブ.soが見つからずクラッシュするため削除
+- セルキーは緯度経度を小数4桁に丸めた `"lat,lng"` 文字列で代替（約11m精度）
+- `latLngToH3Index()` / `h3IndexToLatLng()` は `CollectionRecord.kt` にある
+
+### displayJob（常時3秒更新）
+- GPS不使用でTelephonyManagerのみ
+- キャラ表示のリアルタイム更新用
+- measureJob（GPS計測）とは独立して常時動作
+
+### ナビゲーション
+- 縦横ともに `Scaffold + NavigationBar`（NavigationRailはPixelで表示されないため断念）
+- 横画面は `NavigationBar(modifier = Modifier.height(48.dp))`
+
+---
+
+## Room DBバージョン履歴
+
+| バージョン | 変更内容 |
+|-----------|---------|
+| 1→2 | measurements にアリーナ列追加 |
+| 2→3 | stamp_records テーブル追加 |
+| 3→4 | measurements に cellId 列追加、collection_records テーブル追加 |
+
+---
+
+## 既知の未解決事項 / やりかけ
+
+- 計測しても落ちなくなったはずだが、追加テストが必要
+- git author が `河上修 <osamu.kawakami@mac.lan>`（ホスト名自動設定）になっている
+  → `git config --global user.name/user.email` で正しいGitHubアカウントに設定すること
+- ウィジェット（別プロジェクト）の要件定義が途中（話が途切れた）
+
+---
+
+## 次にやりたいこと（ユーザーより）
+
+1. **別プロジェクトとしてウィジェットを作りたい**
+   - 顔（キャラクター）・メッセージ・計測ボタンのみ
+   - 要件の壁打ちが途中だった（セッション中断）
+
+---
+
+## 主要ファイル一覧
+
+```
+rakuten-coverage/app/src/main/java/com/example/rakutencoverage/
+├── MainActivity.kt                  # enableEdgeToEdge + Scaffold + NavigationBar
+├── data/
+│   ├── AppDatabase.kt               # Room DB (version 4)
+│   ├── Measurement.kt               # エンティティ + SignalLevel enum
+│   ├── CollectionRecord.kt          # コレクション記録 + latLngToH3Index（緯度経度丸め）
+│   ├── MeasurementDao.kt
+│   ├── StampRecord.kt / StampDao.kt
+│   └── SpotRepository.kt
+├── measurement/
+│   ├── MeasurementSession.kt        # GPS+電波+RTT収集（DB保存なし）
+│   ├── NetworkInfoCollector.kt      # TelephonyManager ラッパー
+│   └── PingMeasurer.kt              # HTTP HEAD で RTT 計測
+└── ui/
+    ├── map/
+    │   ├── MapViewModel.kt          # 計測ループ・重複チェック・スタンプ
+    │   └── MapScreen.kt             # マップUI・インターバル選択・キャラ表示
+    ├── history/HistoryScreen.kt
+    ├── stamp/StampScreen.kt
+    ├── collection/
+    │   ├── CollectionViewModel.kt
+    │   └── CollectionScreen.kt
+    └── character/
+        ├── CharacterState.kt
+        └── CharacterWidget.kt       # ホーム画面ウィジェット
+```

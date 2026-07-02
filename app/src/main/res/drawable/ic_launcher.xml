@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- 赤背景の角丸四角 -->
+    <path
+        android:fillColor="#BF0000"
+        android:pathData="M4,4 L44,4 L44,44 L4,44 Z"/>
+
+    <!-- 電波バー 1本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,34 L15,34 L15,28 L10,28 Z"/>
+
+    <!-- 電波バー 2本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17,34 L22,34 L22,22 L17,22 Z"/>
+
+    <!-- 電波バー 3本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,34 L29,34 L29,16 L24,16 Z"/>
+
+    <!-- 電波バー 4本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,34 L36,34 L36,10 L31,10 Z"/>
+
+    <!-- 「R」テキスト風の小ドット -->
+    <path
+        android:fillColor="#FFCC00"
+        android:pathData="M38,8 A3,3 0 1,1 38,7.99 Z"/>
+
+</vector>

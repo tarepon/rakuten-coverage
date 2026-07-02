@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 電波バー 1本目（低い） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,72 L38,72 L38,62 L30,62 Z"/>
+
+    <!-- 電波バー 2本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,72 L50,72 L50,52 L42,52 Z"/>
+
+    <!-- 電波バー 3本目 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,72 L62,72 L62,42 L54,42 Z"/>
+
+    <!-- 電波バー 4本目（高い） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,72 L74,72 L74,32 L66,32 Z"/>
+
+    <!-- 「R」の文字（楽天感） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,82 L72,82"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"/>
+
+</vector>

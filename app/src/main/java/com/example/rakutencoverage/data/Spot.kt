@@ -1,0 +1,14 @@
+package com.example.rakutencoverage.data
+
+enum class SpotType(val label: String, val icon: String) {
+    ARENA("Bリーグアリーナ", "🏟️"),
+    MICHINOEKI("道の駅", "🛣️")
+}
+
+data class Spot(
+    val id: String,
+    val name: String,
+    val latitude: Double,
+    val longitude: Double,
+    val type: SpotType
+)
