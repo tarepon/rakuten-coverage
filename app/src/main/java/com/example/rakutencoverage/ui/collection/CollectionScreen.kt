@@ -34,10 +34,18 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
     val capturedCount by vm.capturedCountByLevel.collectAsState()
     val noSignalQuests by vm.noSignalQuests.collectAsState()
     val monstersByLevel by vm.monstersByLevel.collectAsState()
+    val battle by vm.battle.collectAsState()
+    val partnerKey by vm.partnerKey.collectAsState()
 
     var selectedLevel by remember { mutableStateOf<SignalLevel?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    // トレーニングバトル(全画面オーバーレイ)
+    battle?.let { b ->
+        TrainingBattleScreen(b, vm)
+        return
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -117,7 +125,10 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
         ) {
             MonsterListSheet(
                 level = selectedLevel!!,
-                entries = monstersByLevel[selectedLevel] ?: emptyList()
+                entries = monstersByLevel[selectedLevel] ?: emptyList(),
+                partnerKey = partnerKey,
+                onTraining = { vm.startTraining(it) },
+                onSetPartner = { vm.setPartner(it.cellId) }
             )
         }
     }
@@ -180,12 +191,24 @@ private fun MonsterTile(
 }
 
 @Composable
-private fun MonsterListSheet(level: SignalLevel, entries: List<Pair<Monster, String>>) {
+private fun MonsterListSheet(
+    level: SignalLevel,
+    entries: List<Pair<Monster, String>>,
+    partnerKey: String?,
+    onTraining: (Monster) -> Unit,
+    onSetPartner: (Monster) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text(
             "${level.toEmoji()} ${level.displayName()} 一覧",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            "タップで 🥊 パートナーと特訓 ／ ⭐でパートナー変更",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         LazyVerticalGrid(
@@ -196,7 +219,13 @@ private fun MonsterListSheet(level: SignalLevel, entries: List<Pair<Monster, Str
             modifier = Modifier.heightIn(max = 480.dp)
         ) {
             items(entries) { (monster, capturedAt) ->
-                MonsterGridCell(monster, capturedAt)
+                MonsterGridCell(
+                    monster = monster,
+                    capturedAt = capturedAt,
+                    isPartner = monster.cellId == partnerKey,
+                    onClick = { onTraining(monster) },
+                    onSetPartner = { onSetPartner(monster) }
+                )
             }
         }
     }
@@ -205,15 +234,44 @@ private fun MonsterListSheet(level: SignalLevel, entries: List<Pair<Monster, Str
 private val capturedAtFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
     .withZone(ZoneId.systemDefault())
 
-/** 2列グリッド用のモンスターセル。絵文字大 + 名前 + 星 + 捕獲日時。 */
+/** 2列グリッド用のモンスターセル。タップで特訓、⭐ボタンでパートナー設定。 */
 @Composable
-private fun MonsterGridCell(monster: Monster, capturedAt: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun MonsterGridCell(
+    monster: Monster,
+    capturedAt: String,
+    isPartner: Boolean,
+    onClick: () -> Unit,
+    onSetPartner: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        border = if (isPartner) androidx.compose.foundation.BorderStroke(
+            2.dp, MaterialTheme.colorScheme.primary
+        ) else null
+    ) {
         Column(
-            modifier = Modifier.padding(14.dp).fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Lv.${monster.level}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    if (isPartner) "⭐" else "☆",
+                    fontSize = 16.sp,
+                    modifier = Modifier.clickable(onClick = onSetPartner)
+                )
+            }
             Text(monster.emoji, fontSize = 40.sp)
             Text(
                 monster.name,

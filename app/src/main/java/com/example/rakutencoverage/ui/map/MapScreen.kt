@@ -71,7 +71,7 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
     val selectedInterval by vm.selectedInterval.collectAsState()
     val spotsByType by vm.spotsByType.collectAsState()
     val signalCounts by vm.signalCounts.collectAsState()
-    val discoveredMonster by vm.discoveredMonster.collectAsState()
+    val capture by vm.capture.collectAsState()
     val capturedMonster by vm.capturedMonster.collectAsState()
     val autoCapture by vm.autoCapture.collectAsState()
     val context = LocalContext.current
@@ -135,7 +135,7 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
             checkIn = checkIn,
             selectedInterval = selectedInterval,
             signalCounts = signalCounts,
-            discoveredMonster = discoveredMonster,
+            capture = capture,
             capturedMonster = capturedMonster,
             autoCapture = autoCapture,
             onCheckInClick = { showCheckInDialog = true }
@@ -153,7 +153,7 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
             checkIn = checkIn,
             selectedInterval = selectedInterval,
             signalCounts = signalCounts,
-            discoveredMonster = discoveredMonster,
+            capture = capture,
             capturedMonster = capturedMonster,
             autoCapture = autoCapture,
             onCheckInClick = { showCheckInDialog = true }
@@ -177,7 +177,7 @@ private fun PortraitMapLayout(
     checkIn: com.example.rakutencoverage.ui.map.ArenaModeInput?,
     selectedInterval: MeasureInterval,
     signalCounts: MapViewModel.SignalCounts,
-    discoveredMonster: Monster?,
+    capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
     autoCapture: Boolean,
     onCheckInClick: () -> Unit
@@ -206,14 +206,6 @@ private fun PortraitMapLayout(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(top = 12.dp, end = 12.dp)
-            )
-        }
-
-        discoveredMonster?.let {
-            DiscoveryBanner(
-                monster = it,
-                onCapture = { vm.captureMonster() },
-                modifier = Modifier.align(Alignment.Center)
             )
         }
 
@@ -249,6 +241,9 @@ private fun PortraitMapLayout(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 20.dp)
         )
+
+        // 捕獲ミニゲーム(全画面オーバーレイ、最前面)
+        capture?.let { CaptureMinigame(it, vm) }
     }
 }
 
@@ -268,7 +263,7 @@ private fun LandscapeMapLayout(
     checkIn: com.example.rakutencoverage.ui.map.ArenaModeInput?,
     selectedInterval: MeasureInterval,
     signalCounts: MapViewModel.SignalCounts,
-    discoveredMonster: Monster?,
+    capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
     autoCapture: Boolean,
     onCheckInClick: () -> Unit
@@ -284,14 +279,6 @@ private fun LandscapeMapLayout(
             CapturedMonsterCard(
                 monster = it,
                 onDismiss = { vm.dismissCapturedMonster() },
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-
-        discoveredMonster?.let {
-            DiscoveryBanner(
-                monster = it,
-                onCapture = { vm.captureMonster() },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
@@ -374,6 +361,9 @@ private fun LandscapeMapLayout(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp)
         )
+
+        // 捕獲ミニゲーム(全画面オーバーレイ、最前面)
+        capture?.let { CaptureMinigame(it, vm) }
     }
 }
 
@@ -849,67 +839,146 @@ private fun CapturedMonsterCard(
 }
 
 /**
- * モンスター発見ポップアップ。画面中央に scaleIn + fadeIn で登場し、
- * レア度色の放射グラデーション背景 + ポケボール風の捕獲ボタンを表示する。
+ * 捕獲ミニゲーム(denpamon-go 移植)。全画面オーバーレイ。
+ * 金色リングが縮んでいき、点線ターゲット(scale 0.5)に重なった瞬間に
+ * 投げるほど捕獲率ボーナスが大きい。
  */
 @Composable
-private fun DiscoveryBanner(
-    monster: Monster,
-    onCapture: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val rarityColor = badgeRingColor(monster.signalLevel)
-    val visibleState = remember(monster) { MutableTransitionState(false).apply { targetState = true } }
+private fun CaptureMinigame(e: MapViewModel.CaptureUi, vm: MapViewModel) {
+    val rarityColor = badgeRingColor(e.monster.signalLevel)
 
-    AnimatedVisibility(
-        visibleState = visibleState,
-        enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.6f, animationSpec = tween(300, easing = FastOutSlowInEasing)),
-        modifier = modifier
+    // リングアニメーション: scale 1.0 → 0.22 を1.4秒ループ
+    val transition = rememberInfiniteTransition(label = "captureRing")
+    val ringScale by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.22f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ringScale"
+    )
+
+    // モンスターの上下ゆらゆら
+    val bob by transition.animateFloat(
+        initialValue = 0f, targetValue = -14f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bob"
+    )
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(GoDarkNavy.copy(alpha = 0.97f), androidx.compose.ui.graphics.Color(0xFF101522))
+                )
+            )
+            // 背後のマップへのタッチを遮断
+            .clickable(enabled = false) {}
     ) {
-        Box(
-            modifier = Modifier
-                .size(240.dp)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(rarityColor.copy(alpha = 0.45f), androidx.compose.ui.graphics.Color.Transparent)
-                    )
-                ),
-            contentAlignment = Alignment.Center
+        Column(
+            Modifier.fillMaxSize().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
-                color = GoDarkNavy.copy(alpha = PanelBackgroundAlpha),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("⚡ 出現！", color = GoWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text(monster.emoji, fontSize = 56.sp)
-                    Text(monster.name, color = GoWhite, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(28.dp))
+            Text(
+                if (e.phase == MapViewModel.CapturePhase.CAUGHT) "つかまえた!"
+                else "やせいの ${e.monster.name}が あらわれた!",
+                color = GoWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Lv.${e.monster.level} / ${e.monster.signalLevel.shortLabel()} / ★${e.monster.signalLevel.starCount()}",
+                color = GoWhite.copy(alpha = 0.6f),
+                fontSize = 12.sp
+            )
 
-                    // ポケボール風の捕獲ボタン
+            // ステージ
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                // 点線ターゲットリング(固定 scale 0.5)
+                Box(
+                    Modifier
+                        .size(220.dp)
+                        .scale(0.5f)
+                        .border(2.dp, GoWhite.copy(alpha = 0.35f), CircleShape)
+                )
+                // 収縮リング
+                if (e.phase == MapViewModel.CapturePhase.READY || e.phase == MapViewModel.CapturePhase.MISS) {
                     Box(
+                        Modifier
+                            .size(220.dp)
+                            .scale(ringScale)
+                            .border(4.dp, GoAccent, CircleShape)
+                    )
+                }
+                // モンスター
+                if (e.phase != MapViewModel.CapturePhase.CAUGHT && e.phase != MapViewModel.CapturePhase.FLED) {
+                    Text(
+                        e.monster.emoji,
+                        fontSize = 88.sp,
+                        modifier = Modifier.offset(y = bob.dp)
+                    )
+                } else if (e.phase == MapViewModel.CapturePhase.CAUGHT) {
+                    Text("⚪", fontSize = 72.sp)
+                }
+                // 結果メッセージ
+                e.message?.let {
+                    Text(
+                        it,
+                        color = rarityColor.takeIf { e.phase == MapViewModel.CapturePhase.CAUGHT } ?: GoWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape)
-                            .background(GoDanger)
-                            .border(3.dp, GoWhite, CircleShape)
-                            .clickable(onClick = onCapture),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(GoWhite)
-                                .border(2.dp, GoDarkNavy, CircleShape)
-                        )
-                    }
-                    Text("タップで捕まえる！", color = GoWhite.copy(alpha = 0.7f), fontSize = 11.sp)
+                            .align(Alignment.TopCenter)
+                            .padding(top = 8.dp)
+                    )
                 }
             }
+
+            // 操作ボタン
+            when (e.phase) {
+                MapViewModel.CapturePhase.CAUGHT, MapViewModel.CapturePhase.FLED -> {
+                    Button(
+                        onClick = { vm.dismissCapture() },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) { Text("とじる", fontSize = 17.sp, fontWeight = FontWeight.Bold) }
+                }
+                else -> {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { vm.dismissCapture() },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            enabled = e.phase != MapViewModel.CapturePhase.THROWING
+                        ) { Text("にげる", color = GoWhite) }
+                        Button(
+                            onClick = {
+                                // タイミング判定: 点線リング(0.5)に近いほど 1.0
+                                val accuracy = (1f - kotlin.math.abs(ringScale - 0.5f) / 0.5f).coerceIn(0f, 1f)
+                                vm.throwBall(accuracy)
+                            },
+                            modifier = Modifier.weight(2f).height(56.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            enabled = e.phase == MapViewModel.CapturePhase.READY
+                        ) {
+                            Text("⚪ 投げる!", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

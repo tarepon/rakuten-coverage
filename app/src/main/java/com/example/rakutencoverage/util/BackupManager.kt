@@ -53,6 +53,8 @@ object BackupManager {
                     put("latitude", c.latitude)
                     put("longitude", c.longitude)
                     put("capturedAt", c.capturedAt)
+                    put("level", c.level)
+                    put("xp", c.xp)
                 })
             }
         })
@@ -104,7 +106,9 @@ object BackupManager {
                     signalLevel = o.getString("signalLevel"),
                     latitude    = o.getDouble("latitude"),
                     longitude   = o.getDouble("longitude"),
-                    capturedAt  = o.getString("capturedAt")
+                    capturedAt  = o.getString("capturedAt"),
+                    level       = o.optInt("level", 5),  // 旧フォーマットはマイグレーション初期値と同じ5
+                    xp          = o.optInt("xp", 0)
                 )
             }
         } ?: emptyList()

@@ -11,5 +11,7 @@ data class Monster(
     val defense: Int,
     val moves: List<String>,
     val encounterCount: Int,
-    val signalLevel: SignalLevel
+    val signalLevel: SignalLevel,
+    val level: Int = 1,    // 野生の初期値は生成時に決定。捕獲後は collection_records で成長
+    val xp: Int = 0
 )

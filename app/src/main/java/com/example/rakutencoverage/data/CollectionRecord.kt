@@ -1,5 +1,6 @@
 package com.example.rakutencoverage.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlin.math.roundToLong
@@ -15,7 +16,9 @@ data class CollectionRecord(
     val signalLevel: String,               // SignalLevel.name
     val latitude: Double,                  // 捕獲時のGPS緯度
     val longitude: Double,                 // 捕獲時のGPS経度
-    val capturedAt: String                 // ISO8601
+    val capturedAt: String,                // ISO8601
+    @ColumnInfo(defaultValue = "5") val level: Int = 1,  // トレーニングで成長するレベル
+    @ColumnInfo(defaultValue = "0") val xp: Int = 0      // 次のレベルまでの経験値
 )
 
 /** SignalLevel のレア度順序（小さいほど強い・レア）。AIRPLANE_MODE/NO_SIMはコレクション対象外 */

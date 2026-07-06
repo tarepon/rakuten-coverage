@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Measurement::class, StampRecord::class, CollectionRecord::class], version = 4, exportSchema = false)
+@Database(entities = [Measurement::class, StampRecord::class, CollectionRecord::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun measurementDao(): MeasurementDao
@@ -54,6 +54,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 既存の捕獲済みは野生初期レベル相当の5からスタート
+                db.execSQL("ALTER TABLE collection_records ADD COLUMN level INTEGER NOT NULL DEFAULT 5")
+                db.execSQL("ALTER TABLE collection_records ADD COLUMN xp INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -61,7 +69,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "rakuten_coverage.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { INSTANCE = it }
             }

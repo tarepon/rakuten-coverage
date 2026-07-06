@@ -9,9 +9,12 @@ object MonsterGenerator {
         val rng = SeededRandom(seed)
 
         val name = MonsterAssets.names[rng.nextInt(MonsterAssets.names.size)]
-        val body = MonsterAssets.bodyEmojis[rng.nextInt(MonsterAssets.bodyEmojis.size)]
-        val color = MonsterAssets.colorEmojis[rng.nextInt(MonsterAssets.colorEmojis.size)]
-        val emoji = "$color$body"
+        // 乱数消費順は変えず(既存個体のステータス保護)、2ロールの組合せで denpamon 絵文字を決める
+        val bodyIdx = rng.nextInt(MonsterAssets.bodyEmojis.size)
+        val colorIdx = rng.nextInt(MonsterAssets.colorEmojis.size)
+        val emoji = MonsterAssets.monsterEmojis[
+            (bodyIdx * MonsterAssets.colorEmojis.size + colorIdx) % MonsterAssets.monsterEmojis.size
+        ]
 
         val hp      = rng.nextInt(100) + 1
         val attack  = rng.nextInt(100) + 1
@@ -30,6 +33,9 @@ object MonsterGenerator {
             shuffled.take(moveCount)
         }
 
+        // 野生の初期レベル 3〜10(既存ロールの後に追加 — 手前のステータスに影響しない)
+        val level = 3 + rng.nextInt(8)
+
         return Monster(
             cellId = cellId,
             name = name,
@@ -39,7 +45,8 @@ object MonsterGenerator {
             defense = defense,
             moves = moves,
             encounterCount = encounterCount,
-            signalLevel = signalLevel
+            signalLevel = signalLevel,
+            level = level
         )
     }
 
