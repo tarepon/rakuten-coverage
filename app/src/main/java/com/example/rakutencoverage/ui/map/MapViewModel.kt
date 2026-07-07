@@ -153,6 +153,15 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setAutoCapture(enabled: Boolean) { _autoCapture.value = enabled }
 
+    /**
+     * 自分の計測データから作る「面」表示（カバレッジエリア風オーバーレイ）の表示切り替え。
+     * 楽天モバイル公式のエリアマップとは無関係 — あくまで自分が実測した範囲を可視化するもの。
+     */
+    private val _showCoverageArea = MutableStateFlow(true)
+    val showCoverageArea: StateFlow<Boolean> = _showCoverageArea
+
+    fun setShowCoverageArea(enabled: Boolean) { _showCoverageArea.value = enabled }
+
     private var currentCellId: String? = null
 
     /** このセッション中に逃げられた/見送ったセル(再遭遇させない) */
