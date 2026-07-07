@@ -122,10 +122,15 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     val collectionRecords: StateFlow<List<CollectionRecord>> = collectionDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** 捕獲済みセルIDのHashSet — contains() が O(1) */
+    /**
+     * 捕獲済みセルIDのHashSet — contains() が O(1)。
+     * UI からは購読されず ViewModel 内部の重複判定にのみ使うため、
+     * WhileSubscribed だと購読者不在で上流の DB 監視が始まらず常に空集合のままになる。
+     * Eagerly にして ViewModel 生存中は常に最新の捕獲済みセルを反映させる。
+     */
     private val capturedCellIds: StateFlow<Set<String>> = collectionDao.observeAllH3Indexes()
         .map { it.toHashSet() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     /** 捕獲ミニゲームの進行フェーズ(denpamon-go 移植) */
     enum class CapturePhase { READY, THROWING, MISS, FLED, CAUGHT }
