@@ -19,6 +19,9 @@ Kotlin / Jetpack Compose (Material3) / Room / OSMDroid / FusedLocationProviderCl
 
 Android Studio でこのフォルダを開いてビルドしてください。`local.properties` に SDK パスが必要です。
 
+リリースビルド(署名)と Google Play 公開の手順は [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) を、
+プライバシーポリシーは [PRIVACY_POLICY.md](PRIVACY_POLICY.md) を参照。
+
 開発メモは [HANDOFF.md](HANDOFF.md) と [REDESIGN_PLAN.md](REDESIGN_PLAN.md) を参照。
 
 ## 免責事項

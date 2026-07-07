@@ -17,4 +17,5 @@ captures/
 # 秘匿情報
 *.keystore
 *.jks
+keystore.properties
 .env

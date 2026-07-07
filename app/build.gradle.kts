@@ -10,11 +10,30 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.rakutencoverage"
+        // Google Play は com.example.* の applicationId を受け付けないため公開用IDを使用。
+        // namespace(コード上のパッケージ)は据え置きでも問題ない。
+        applicationId = "io.github.tarepon.platinumhunter"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0-prototype"
+        versionName = "1.0.0"
+    }
+
+    // 署名情報はリポジトリに含めず keystore.properties から読み込む（RELEASE_CHECKLIST.md 参照）
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val hasKeystore = keystorePropsFile.exists()
+    if (hasKeystore) {
+        val props = java.util.Properties().apply {
+            keystorePropsFile.inputStream().use { load(it) }
+        }
+        signingConfigs {
+            create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -25,6 +44,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -57,5 +79,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.location)
-debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.tooling)
 }
