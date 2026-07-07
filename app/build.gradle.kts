@@ -82,4 +82,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.location)
     debugImplementation(libs.androidx.ui.tooling)
+
+    // activity-compose 経由の推移的依存が古い fragment を解決してしまい、
+    // ActivityResult API 利用時の lint InvalidFragmentVersionForActivityResult が発生するため固定する
+    constraints {
+        implementation(libs.androidx.fragment.ktx) {
+            because("registerForActivityResult には fragment 1.3.0 以上が必要（lint 対応）")
+        }
+    }
 }
