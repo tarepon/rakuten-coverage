@@ -118,7 +118,7 @@ class NetworkInfoCollector(private val context: Context) {
                 val signal   = info.cellSignalStrength as CellSignalStrengthNr
                 val bandName = identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = true) }
                 val cellId   = identity.nci.takeIf { it != Long.MAX_VALUE }?.toString()
-                Triple(bandName, signal.dbm, cellId)
+                Triple(bandName, signal.dbm.takeIfAvailable(), cellId)
             }
             is CellInfoLte -> {
                 val identity = info.cellIdentity as CellIdentityLte
@@ -127,11 +127,14 @@ class NetworkInfoCollector(private val context: Context) {
                     identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = false) }
                 else null
                 val cellId = identity.ci.takeIf { it != Int.MAX_VALUE }?.toString()
-                Triple(bandName, signal.dbm, cellId)
+                Triple(bandName, signal.dbm.takeIfAvailable(), cellId)
             }
             else -> Triple(null, null, null)
         }
     }
+
+    /** CellSignalStrength 系の dbm は取得不可時 CellInfo.UNAVAILABLE (Int.MAX_VALUE) を返すため除外する */
+    private fun Int.takeIfAvailable(): Int? = takeIf { this != CellInfo.UNAVAILABLE }
 
     /**
      * バンド番号を文字列に変換する。
