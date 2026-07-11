@@ -1669,6 +1669,22 @@
   {
    "type": "Feature",
    "properties": {
+    "id": "aeon_105",
+    "name": "イオンモール北大路",
+    "pref": "京都府",
+    "city": "京都市北区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.758087,
+     35.044804
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
     "id": "aeon_106",
     "name": "イオンモール高の原",
     "pref": "京都府",
@@ -1759,6 +1775,22 @@
     "coordinates": [
      135.4805927,
      34.594441
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_112",
+    "name": "イオンSENRITO専門館",
+    "pref": "大阪府",
+    "city": "豊中市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.494156,
+     34.808811
     ]
    }
   },
@@ -2079,6 +2111,22 @@
     "coordinates": [
      133.3861806,
      35.4454129
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_133",
+    "name": "イオンモール出雲",
+    "pref": "島根県",
+    "city": "出雲市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.739349,
+     35.367203
     ]
    }
   },
