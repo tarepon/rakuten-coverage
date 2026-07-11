@@ -22,3 +22,6 @@ keystore.properties
 
 # Android Studio リリースビルド出力
 app/release/
+
+# Kotlinビルド生成物(エラーログ等)
+.kotlin/
