@@ -34,6 +34,8 @@ import com.example.rakutencoverage.measurement.SpeedTester
 import com.example.rakutencoverage.ui.map.ArenaModeInput
 import com.example.rakutencoverage.ui.map.MapViewModel
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -82,6 +84,7 @@ fun CheckInInputScreen(
     var speedProgress by remember { mutableStateOf("") }
 
     var submitting by remember { mutableStateOf(false) }
+    var geofenceError by remember { mutableStateOf<String?>(null) }
 
     // 4-1: spotId指定ありの場合、該当Spotをロード完了次第選択済みにする
     LaunchedEffect(initialSpotId, spotsByType) {
@@ -140,7 +143,8 @@ fun CheckInInputScreen(
         if (initialSpotId != null || nearestAutoApplied || spotDistances.isEmpty()) return@LaunchedEffect
         nearestAutoApplied = true
         val nearest = spotDistances.entries.minByOrNull { it.value } ?: return@LaunchedEffect
-        if (nearest.value <= 2000f) {
+        // ジオフェンス半径と同じ閾値(選択できたのに確定で弾かれる不整合を防ぐ)
+        if (nearest.value <= CheckInGeofence.RADIUS_M) {
             val spot = allSpots.firstOrNull { it.id == nearest.key } ?: return@LaunchedEffect
             selectedType = spot.type
             selectedSpot = spot
@@ -342,44 +346,80 @@ fun CheckInInputScreen(
                     val spot = selectedSpot ?: return@Button
                     submitting = true
                     scope.launch {
-                        val photoPath = pendingPhotoUri?.let { uri -> copyPhotoToFilesDir(context, uri) }
+                        // 不正防止ジオフェンス: lastLocationは古い位置が残りうるため、
+                        // 確定時に必ず新鮮な現在地を取得して1km判定する(クイック追加経由も同じ経路)
                         val location = runCatching {
-                            LocationServices.getFusedLocationProviderClient(context).lastLocation.await()
+                            LocationServices.getFusedLocationProviderClient(context)
+                                .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token)
+                                .await()
                         }.getOrNull()
-
-                        val isArena = spot.type == SpotType.ARENA
-                        val record = CheckInRecord(
-                            spotId = spot.id,
-                            spotType = spot.type.name,
-                            spotName = spot.name,
-                            latitude = location?.latitude,
-                            longitude = location?.longitude,
-                            timestamp = Instant.now().toString(),
-                            seatLabel = if (isArena) seatLabel.ifBlank { null } else null,
-                            gamePhase = if (isArena) selectedPhase.name else null,
-                            photoPath = photoPath,
-                            downloadMbps = speedResult?.downloadMbps,
-                            uploadMbps = speedResult?.uploadMbps,
-                            latencyMs = speedResult?.latencyMs,
-                            memo = memo.ifBlank { null }
-                        )
-                        withContext(Dispatchers.IO) {
-                            AppDatabase.getInstance(context).checkInDao().insert(record)
+                        val distanceM = location?.let {
+                            val results = FloatArray(1)
+                            Location.distanceBetween(it.latitude, it.longitude, spot.latitude, spot.longitude, results)
+                            results[0]
                         }
-                        mapViewModel.setCheckIn(ArenaModeInput(spot, seatLabel, selectedPhase))
-                        submitting = false
-                        onCheckedIn()
+                        when (val verdict = CheckInGeofence.judge(distanceM)) {
+                            is CheckInGeofence.Verdict.NoLocation -> {
+                                geofenceError = "現在地を確認できないためチェックインできません。\n位置情報(GPS)をONにして再度お試しください。"
+                                submitting = false
+                            }
+                            is CheckInGeofence.Verdict.TooFar -> {
+                                geofenceError = "📍 スポットから${CheckInGeofence.formatDistance(verdict.distanceM)}離れています。\n${spot.name}から1km以内でチェックインできます。"
+                                submitting = false
+                            }
+                            CheckInGeofence.Verdict.Ok -> {
+                                val photoPath = pendingPhotoUri?.let { uri -> copyPhotoToFilesDir(context, uri) }
+                                val isArena = spot.type == SpotType.ARENA
+                                val record = CheckInRecord(
+                                    spotId = spot.id,
+                                    spotType = spot.type.name,
+                                    spotName = spot.name,
+                                    latitude = location?.latitude,
+                                    longitude = location?.longitude,
+                                    timestamp = Instant.now().toString(),
+                                    seatLabel = if (isArena) seatLabel.ifBlank { null } else null,
+                                    gamePhase = if (isArena) selectedPhase.name else null,
+                                    photoPath = photoPath,
+                                    downloadMbps = speedResult?.downloadMbps,
+                                    uploadMbps = speedResult?.uploadMbps,
+                                    latencyMs = speedResult?.latencyMs,
+                                    memo = memo.ifBlank { null }
+                                )
+                                withContext(Dispatchers.IO) {
+                                    AppDatabase.getInstance(context).checkInDao().insert(record)
+                                }
+                                mapViewModel.setCheckIn(ArenaModeInput(spot, seatLabel, selectedPhase))
+                                submitting = false
+                                onCheckedIn()
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 if (submitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        Text("位置確認中…", fontSize = 14.sp)
+                    }
                 } else {
                     Text("🎫 チェックインする", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
+    }
+
+    // ジオフェンス判定NG(圏外・位置不取得)の通知ダイアログ。入力内容は保持される
+    geofenceError?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { geofenceError = null },
+            icon = { Text("🚫", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("チェックインできません") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { geofenceError = null }) { Text("OK") }
+            }
+        )
     }
 
     // スポット選択ボトムシート: ほぼ全画面高さで種別・検索・絞り込み・一覧を表示する
