@@ -1,5 +1,6 @@
 package com.example.rakutencoverage.util
 
+import com.example.rakutencoverage.data.CheckInRecord
 import com.example.rakutencoverage.data.CollectionRecord
 import com.example.rakutencoverage.data.Measurement
 import com.example.rakutencoverage.data.StampRecord
@@ -7,7 +8,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * 全データ（計測・図鑑・スタンプ）のJSONバックアップ生成とパース。
+ * 全データ（計測・図鑑・スタンプ・チェックイン記録）のJSONバックアップ生成とパース。
  * フォーマットはトップレベルに version を持ち、将来のスキーマ変更時に分岐できるようにする。
  */
 object BackupManager {
@@ -17,7 +18,10 @@ object BackupManager {
     data class BackupData(
         val measurements: List<Measurement>,
         val collections: List<CollectionRecord>,
-        val stamps: List<StampRecord>
+        val stamps: List<StampRecord>,
+        // 旧フォーマットのバックアップJSONには checkins キーが存在しないため、
+        // 復元時に fromJson が emptyList() を返せるようデフォルト値を持たせる (後方互換)
+        val checkins: List<CheckInRecord> = emptyList()
     )
 
     fun toJson(data: BackupData): String {
@@ -66,6 +70,25 @@ object BackupManager {
                     put("spotType", s.spotType)
                     put("spotName", s.spotName)
                     put("achievedAt", s.achievedAt)
+                })
+            }
+        })
+
+        root.put("checkins", JSONArray().apply {
+            data.checkins.forEach { c ->
+                put(JSONObject().apply {
+                    put("spotId", c.spotId)
+                    put("spotType", c.spotType)
+                    put("spotName", c.spotName)
+                    putOpt("latitude", c.latitude)
+                    putOpt("longitude", c.longitude)
+                    put("timestamp", c.timestamp)
+                    putOpt("seatLabel", c.seatLabel)
+                    putOpt("gamePhase", c.gamePhase)
+                    putOpt("photoPath", c.photoPath)
+                    putOpt("downloadMbps", c.downloadMbps)
+                    putOpt("uploadMbps", c.uploadMbps)
+                    putOpt("latencyMs", c.latencyMs)
                 })
             }
         })
@@ -125,9 +148,33 @@ object BackupManager {
             }
         } ?: emptyList()
 
-        return BackupData(measurements, collections, stamps)
+        // 旧フォーマットのJSONには "checkins" キーが無いため、無ければ空リスト(後方互換)
+        val checkins = root.optJSONArray("checkins")?.let { arr ->
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                CheckInRecord(
+                    spotId       = o.getString("spotId"),
+                    spotType     = o.getString("spotType"),
+                    spotName     = o.getString("spotName"),
+                    latitude     = o.optDoubleOrNull("latitude"),
+                    longitude    = o.optDoubleOrNull("longitude"),
+                    timestamp    = o.getString("timestamp"),
+                    seatLabel    = o.optStringOrNull("seatLabel"),
+                    gamePhase    = o.optStringOrNull("gamePhase"),
+                    photoPath    = o.optStringOrNull("photoPath"),
+                    downloadMbps = o.optDoubleOrNull("downloadMbps"),
+                    uploadMbps   = o.optDoubleOrNull("uploadMbps"),
+                    latencyMs    = if (o.has("latencyMs") && !o.isNull("latencyMs")) o.getInt("latencyMs") else null
+                )
+            }
+        } ?: emptyList()
+
+        return BackupData(measurements, collections, stamps, checkins)
     }
 
     private fun JSONObject.optStringOrNull(key: String): String? =
         if (has(key) && !isNull(key)) getString(key) else null
+
+    private fun JSONObject.optDoubleOrNull(key: String): Double? =
+        if (has(key) && !isNull(key)) getDouble(key) else null
 }

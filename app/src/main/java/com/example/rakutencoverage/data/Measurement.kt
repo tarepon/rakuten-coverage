@@ -76,14 +76,30 @@ enum class SignalLevel {
     NO_SIM           // SIM 未挿入 → スタンプ無効
 }
 
-/** 試合の進行フェーズ。アリーナチェックイン時に選択する */
+/**
+ * 試合の進行フェーズ。アリーナチェックイン時に選択する。
+ * BREAK_Q1_Q2 / BREAK_Q3_Q4 (クォーター間の休憩) を追加。
+ * 既存データは GamePhase.name (文字列) で保存されているため、列挙子の追加は安全 (順序変更・削除は不可)。
+ */
 enum class GamePhase(val label: String) {
     PRE_GAME("試合前"),
     Q1("第1Q"),
+    BREAK_Q1_Q2("1-2Q間"),
     Q2("第2Q"),
     HALFTIME("ハーフタイム"),
     Q3("第3Q"),
+    BREAK_Q3_Q4("3-4Q間"),
     Q4("第4Q"),
     OVERTIME("延長"),
     POST_GAME("試合後")
+}
+
+/**
+ * チェックイン入力画面のフェーズ自動送りに使う純粋関数。
+ * enum順でordinal+1の次フェーズを返す。末尾(POST_GAME)は据え置き。
+ */
+fun nextPhase(current: GamePhase): GamePhase {
+    val entries = GamePhase.entries
+    val nextIndex = current.ordinal + 1
+    return if (nextIndex < entries.size) entries[nextIndex] else current
 }

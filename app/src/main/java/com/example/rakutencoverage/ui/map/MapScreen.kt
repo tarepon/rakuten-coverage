@@ -9,6 +9,8 @@ import android.graphics.Point
 import kotlin.math.pow
 import kotlin.math.hypot
 import android.view.MotionEvent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -27,17 +29,23 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.rakutencoverage.data.CollectionRecord
 import com.example.rakutencoverage.data.Measurement
 import com.example.rakutencoverage.data.monster.Monster
 import com.example.rakutencoverage.data.rarityRank
 import com.example.rakutencoverage.data.latLngToH3Index
+import com.example.rakutencoverage.util.DataExporter
+import com.example.rakutencoverage.util.GeoUtils
 import kotlinx.coroutines.tasks.await
 import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.data.SpotType
@@ -59,10 +67,12 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Overlay
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @SuppressLint("MissingPermission")
 @Composable
-fun MapScreen(vm: MapViewModel = viewModel()) {
+fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = {}) {
     val measurements by vm.measurements.collectAsState()
     val collectionRecords by vm.collectionRecords.collectAsState()
     val character by vm.character.collectAsState()
@@ -78,14 +88,83 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
     val autoCapture by vm.autoCapture.collectAsState()
     val showCoverageArea by vm.showCoverageArea.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    var showCheckInDialog by remember { mutableStateOf(false) }
 
     OsmConfiguration.getInstance().userAgentValue = context.packageName
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val fusedLocation = remember { LocationServices.getFusedLocationProviderClient(context) }
     val view = LocalView.current
+
+    // ────────────────────────────────────────
+    // 囲って保存(ラッソエクスポート)の状態
+    // ────────────────────────────────────────
+    var lassoEnabled by remember { mutableStateOf(false) }
+    var lassoPoints by remember { mutableStateOf<List<GeoPoint>?>(null) }
+    var lassoMatches by remember { mutableStateOf<List<Measurement>>(emptyList()) }
+    var showLassoConfirmDialog by remember { mutableStateOf(false) }
+    var lassoFileNameInput by remember { mutableStateOf("") }
+    var lassoMessage by remember { mutableStateOf<String?>(null) }
+
+    val lassoOverlay = remember { LassoOverlay(onComplete = { points -> lassoPoints = points }) }
+
+    val lassoSaveLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) {
+            lassoEnabled = false
+        } else {
+            scope.launch {
+                lassoMessage = runCatching {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(uri)?.use {
+                            it.write(DataExporter.toGeoJsonString(lassoMatches).toByteArray(Charsets.UTF_8))
+                        } ?: error("ファイルを開けませんでした")
+                    }
+                    "✅ ${lassoMatches.size}件を保存しました"
+                }.getOrElse { "❌ 保存に失敗: ${it.message}" }
+                lassoEnabled = false
+            }
+        }
+    }
+
+    // enabled のON/OFFに合わせてオーバーレイの内部状態を同期し、OFF時は軌跡を消して再描画する
+    LaunchedEffect(lassoEnabled) {
+        lassoOverlay.active = lassoEnabled
+        if (!lassoEnabled) {
+            lassoOverlay.clear()
+            mapViewRef.value?.invalidate()
+        }
+    }
+
+    // ラッソ確定(3点以上でACTION_UP)時: 範囲内件数を数え、0件ならメッセージのみ、1件以上なら確認ダイアログ
+    LaunchedEffect(lassoPoints) {
+        val points = lassoPoints ?: return@LaunchedEffect
+        val matches = measurements.filter { GeoUtils.pointInPolygon(it.latitude, it.longitude, points) }
+        lassoPoints = null
+        if (matches.isEmpty()) {
+            lassoMessage = "範囲内に計測データがありません"
+            lassoEnabled = false
+        } else {
+            lassoMatches = matches
+            lassoFileNameInput = "area_export_${lassoFileNameFormatter.format(LocalDateTime.now())}"
+            showLassoConfirmDialog = true
+        }
+    }
+
+    // 一定時間で結果メッセージを自動的に消す(簡易トースト代わり)
+    LaunchedEffect(lassoMessage) {
+        if (lassoMessage != null) {
+            delay(3000L)
+            lassoMessage = null
+        }
+    }
+
+    val lassoStatusText = if (lassoEnabled && !showLassoConfirmDialog) {
+        "✂️ 指で囲むと範囲内の計測をエクスポートできます"
+    } else {
+        lassoMessage
+    }
 
     // 計測中は画面OFF無効
     DisposableEffect(isRunning) {
@@ -116,15 +195,6 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
         onDispose { fusedLocation.removeLocationUpdates(callback) }
     }
 
-    if (showCheckInDialog) {
-        CheckInDialog(
-            current = checkIn,
-            spotsByType = spotsByType,
-            onConfirm = { input -> vm.setCheckIn(input); showCheckInDialog = false },
-            onDismiss = { showCheckInDialog = false }
-        )
-    }
-
     if (isLandscape) {
         LandscapeMapLayout(
             vm = vm,
@@ -142,7 +212,11 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
             capturedMonster = capturedMonster,
             autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
-            onCheckInClick = { showCheckInDialog = true }
+            onCheckInClick = onNavigateToCheckIn,
+            lassoEnabled = lassoEnabled,
+            lassoStatusText = lassoStatusText,
+            onLassoToggle = { lassoEnabled = !lassoEnabled },
+            lassoOverlay = lassoOverlay
         )
     } else {
         PortraitMapLayout(
@@ -161,10 +235,51 @@ fun MapScreen(vm: MapViewModel = viewModel()) {
             capturedMonster = capturedMonster,
             autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
-            onCheckInClick = { showCheckInDialog = true }
+            onCheckInClick = onNavigateToCheckIn,
+            lassoEnabled = lassoEnabled,
+            lassoStatusText = lassoStatusText,
+            onLassoToggle = { lassoEnabled = !lassoEnabled },
+            lassoOverlay = lassoOverlay
+        )
+    }
+
+    if (showLassoConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLassoConfirmDialog = false; lassoEnabled = false },
+            icon = { Text("✂️", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("範囲内の計測をGeoJSONで保存") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("範囲内の計測 ${lassoMatches.size} 件をGeoJSONで保存します。")
+                    OutlinedTextField(
+                        value = lassoFileNameInput,
+                        onValueChange = { lassoFileNameInput = it },
+                        label = { Text("ファイル名") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "⚠️ 位置情報を含むファイルです。共有先にご注意ください。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLassoConfirmDialog = false
+                    val name = lassoFileNameInput.ifBlank { "area_export" }
+                    lassoSaveLauncher.launch("$name.geojson")
+                }) { Text("保存先を選ぶ") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLassoConfirmDialog = false; lassoEnabled = false }) { Text("キャンセル") }
+            }
         )
     }
 }
+
+private val lassoFileNameFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
 // ────────────────────────────────────────────
 // 縦画面レイアウト
@@ -186,10 +301,14 @@ private fun PortraitMapLayout(
     capturedMonster: Monster?,
     autoCapture: Boolean,
     showCoverageArea: Boolean,
-    onCheckInClick: () -> Unit
+    onCheckInClick: () -> Unit,
+    lassoEnabled: Boolean,
+    lassoStatusText: String?,
+    onLassoToggle: () -> Unit,
+    lassoOverlay: LassoOverlay
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing)
+        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -219,8 +338,17 @@ private fun PortraitMapLayout(
             checkIn = checkIn,
             topPadding = 84.dp,
             onDismiss = { vm.setCheckIn(null) },
+            onClick = onCheckInClick,
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(0.92f)
         )
+
+        lassoStatusText?.let {
+            LassoStatusBanner(
+                text = it,
+                topPadding = if (checkIn != null) 150.dp else 84.dp,
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(0.92f)
+            )
+        }
 
         last?.let {
             StatusPill(
@@ -239,7 +367,8 @@ private fun PortraitMapLayout(
             checkIn = checkIn,
             autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
-            onCheckInClick = onCheckInClick,
+            lassoEnabled = lassoEnabled,
+            onLassoToggle = onLassoToggle,
             onFollowClick = {
                 if (isFollowing) vm.stopFollowing()
                 else { mapViewRef.value?.controller?.setZoom(15.0); vm.startFollowing() }
@@ -274,14 +403,18 @@ private fun LandscapeMapLayout(
     capturedMonster: Monster?,
     autoCapture: Boolean,
     showCoverageArea: Boolean,
-    onCheckInClick: () -> Unit
+    onCheckInClick: () -> Unit,
+    lassoEnabled: Boolean,
+    lassoStatusText: String?,
+    onLassoToggle: () -> Unit,
+    lassoOverlay: LassoOverlay
 ) {
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     // 左パネルを画面幅の28%に（最低160dp、最大240dp）
     val leftPanelWidth = (screenWidthDp * 0.28f).coerceIn(160f, 240f).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing)
+        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -309,6 +442,14 @@ private fun LandscapeMapLayout(
             )
         }
 
+        lassoStatusText?.let {
+            LassoStatusBanner(
+                text = it,
+                topPadding = 8.dp,
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth(0.6f)
+            )
+        }
+
         // 左パネル: チェックイン情報（バッジの下）
         Column(
             modifier = Modifier
@@ -317,9 +458,10 @@ private fun LandscapeMapLayout(
                 .width(leftPanelWidth),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // チェックイン情報（横画面）
+            // チェックイン情報（横画面）。CheckInBanner(縦画面)と同様タップでチェックイン画面へ遷移する
             checkIn?.let { ci ->
                 Surface(
+                    onClick = onCheckInClick,
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     shape = MaterialTheme.shapes.small
                 ) {
@@ -361,7 +503,8 @@ private fun LandscapeMapLayout(
             checkIn = checkIn,
             autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
-            onCheckInClick = onCheckInClick,
+            lassoEnabled = lassoEnabled,
+            onLassoToggle = onLassoToggle,
             onFollowClick = {
                 if (isFollowing) vm.stopFollowing()
                 else { mapViewRef.value?.controller?.setZoom(15.0); vm.startFollowing() }
@@ -386,7 +529,8 @@ private fun OsmMapView(
     collectionRecords: List<CollectionRecord>,
     showCoverageArea: Boolean,
     mapViewRef: MutableState<MapView?>,
-    onUserTouch: () -> Unit
+    onUserTouch: () -> Unit,
+    lassoOverlay: LassoOverlay
 ) {
     AndroidView(
         factory = { ctx ->
@@ -396,6 +540,8 @@ private fun OsmMapView(
                 isTilesScaledToDpi = true
                 controller.setZoom(15.0)
                 overlays.add(TouchInterceptOverlay(onUserTouch))
+                // 囲って保存(ラッソ)描画。enabled=true の間だけタッチを消費する
+                overlays.add(lassoOverlay)
                 // OSMタイル利用時のライセンス上必須の帰属表示（© OpenStreetMap contributors）
                 overlays.add(CopyrightOverlay(ctx))
             }.also { mapViewRef.value = it }
@@ -416,15 +562,18 @@ private fun OsmMapView(
     )
 }
 
+/** チェックイン中バナー。タップでチェックイン画面(記録タブ)へ遷移する */
 @Composable
 private fun CheckInBanner(
     checkIn: ArenaModeInput?,
     topPadding: androidx.compose.ui.unit.Dp,
     onDismiss: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (checkIn == null) return
     Surface(
+        onClick = onClick,
         modifier = modifier.padding(top = topPadding),
         color = MaterialTheme.colorScheme.tertiaryContainer,
         shape = MaterialTheme.shapes.medium,
@@ -446,9 +595,32 @@ private fun CheckInBanner(
     }
 }
 
+/** 囲って保存(ラッソ)モードの案内 or 結果メッセージを表示するバナー。CheckInBannerと同スタイル */
+@Composable
+private fun LassoStatusBanner(
+    text: String,
+    topPadding: Dp,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.padding(top = topPadding),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        tonalElevation = 4.dp
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+    }
+}
+
 /**
  * 下部HUD: 中央に大きなメインボタン（マッピング開始/停止、実行中はパルス）、
- * 右に現在位置ボタン、左に「⋯」その他設定ボタン（チェックイン・間隔・自動捕獲をシートに集約）。
+ * 右に現在位置ボタン、左に「⋯」その他設定ボタン（間隔・自動捕獲・エリア表示をシートに集約。
+ * チェックインはボトムナビ/バナーに移設したためシートには含まない）、
+ * その隣に「✂️」囲って保存トグルボタン。
  */
 @Composable
 private fun BottomHud(
@@ -459,7 +631,8 @@ private fun BottomHud(
     checkIn: ArenaModeInput?,
     autoCapture: Boolean,
     showCoverageArea: Boolean,
-    onCheckInClick: () -> Unit,
+    lassoEnabled: Boolean,
+    onLassoToggle: () -> Unit,
     onFollowClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -476,6 +649,14 @@ private fun BottomHud(
             size = 52.dp,
             active = checkIn != null || autoCapture,
             onClick = { showSettingsSheet = true }
+        )
+
+        CircleIconButton(
+            emoji = "✂️",
+            label = "囲んで保存",
+            size = 52.dp,
+            active = lassoEnabled,
+            onClick = onLassoToggle
         )
 
         MainMeasureButton(
@@ -496,10 +677,8 @@ private fun BottomHud(
         MapSettingsSheet(
             vm = vm,
             selectedInterval = selectedInterval,
-            checkIn = checkIn,
             autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
-            onCheckInClick = onCheckInClick,
             onDismiss = { showSettingsSheet = false }
         )
     }
@@ -601,10 +780,8 @@ private fun HudLabel(text: String) {
 private fun MapSettingsSheet(
     vm: MapViewModel,
     selectedInterval: MeasureInterval,
-    checkIn: ArenaModeInput?,
     autoCapture: Boolean,
     showCoverageArea: Boolean,
-    onCheckInClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -633,17 +810,6 @@ private fun MapSettingsSheet(
                     Text("自分の実測データから塗るカバレッジ範囲（自作・非公式）", fontSize = 10.sp)
                 }
                 Switch(checked = showCoverageArea, onCheckedChange = { vm.setShowCoverageArea(it) })
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("チェックイン", fontSize = 14.sp)
-                TextButton(onClick = onCheckInClick) {
-                    Text(if (checkIn != null) "🎫 ${checkIn.spot.name}" else "未設定")
-                }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

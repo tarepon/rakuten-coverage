@@ -27,7 +27,11 @@ class SpotRepository(private val context: Context) {
                     name = props.getString("name"),
                     latitude = coords.getDouble(1),
                     longitude = coords.getDouble(0),
-                    type = type
+                    type = type,
+                    pref = props.optString("pref"),
+                    city = props.optString("city"),
+                    club = props.optString("club"),
+                    division = props.optString("division")
                 )
             }
         } catch (e: Exception) {

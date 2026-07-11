@@ -10,5 +10,9 @@ data class Spot(
     val name: String,
     val latitude: Double,
     val longitude: Double,
-    val type: SpotType
+    val type: SpotType,
+    val pref: String = "",
+    val city: String = "",
+    val club: String = "",
+    val division: String = ""
 )

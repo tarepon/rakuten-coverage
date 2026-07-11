@@ -20,6 +20,7 @@ import com.example.rakutencoverage.util.DataExporter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.LocalDate
 
 @Composable
@@ -46,7 +47,8 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
                         BackupManager.BackupData(
                             measurements = db.measurementDao().getAll(),
                             collections  = db.collectionDao().getAll(),
-                            stamps       = db.stampDao().getAll()
+                            stamps       = db.stampDao().getAll(),
+                            checkins     = db.checkInDao().getAll()
                         )
                     )
                     context.contentResolver.openOutputStream(uri)?.use {
@@ -81,9 +83,14 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
                     // 図鑑・スタンプ: 主キー重複は既存を優先
                     db.collectionDao().insertAllIgnore(data.collections)
                     db.stampDao().insertAllIgnore(data.stamps)
+                    // チェックイン記録: 既存タイムスタンプと重複しないものだけ追加(計測と同じ方式)
+                    val existingCheckins = db.checkInDao().getAllTimestamps().toHashSet()
+                    val newCheckins = data.checkins.filter { it.timestamp !in existingCheckins }
+                    if (newCheckins.isNotEmpty()) db.checkInDao().insertAll(newCheckins)
 
                     "✅ インポート完了: 計測${newMeasurements.size}件を追加" +
-                        "（図鑑${data.collections.size}件・スタンプ${data.stamps.size}件をマージ）"
+                        "（図鑑${data.collections.size}件・スタンプ${data.stamps.size}件・" +
+                        "チェックイン${newCheckins.size}件をマージ）"
                 }
             }.getOrElse { "❌ インポートに失敗: ${it.message}" }
             busy = false
@@ -226,6 +233,14 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
                             db.measurementDao().deleteAll()
                             db.collectionDao().deleteAll()
                             db.stampDao().deleteAll()
+                            // チェックイン写真(filesDir)はDB削除だけでは残ってしまうため、
+                            // レコードを消す前にベストエフォートで実ファイルも削除する
+                            db.checkInDao().getAll().forEach { record ->
+                                record.photoPath?.let { path ->
+                                    runCatching { File(context.filesDir, path).delete() }
+                                }
+                            }
+                            db.checkInDao().deleteAll()
                         }
                         "✅ 全データを削除しました"
                     }.getOrElse { "❌ 削除に失敗: ${it.message}" }

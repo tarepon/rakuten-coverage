@@ -19,3 +19,6 @@ captures/
 *.jks
 keystore.properties
 .env
+
+# Android Studio リリースビルド出力
+app/release/

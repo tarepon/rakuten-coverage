@@ -87,4 +87,7 @@ dependencies {
     // InvalidFragmentVersionForActivityResult 対策。明示的に依存させないと
     // fragment が依存グラフに含まれず、lint が古いバージョンとみなし fatal error になる
     implementation(libs.androidx.fragment.ktx)
+
+    // 純粋関数の単体テスト(GeoUtils.pointInPolygon / SpeedTester.calcMbps)
+    testImplementation(libs.junit)
 }

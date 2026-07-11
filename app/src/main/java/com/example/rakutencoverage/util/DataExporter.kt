@@ -15,7 +15,11 @@ object DataExporter {
         return writeTemp(context, "coverage_export.csv", header + rows)
     }
 
-    fun toGeoJson(measurements: List<Measurement>, context: Context): File {
+    /**
+     * GeoJSON文字列を生成する純粋関数。cacheDirへの書き込みを伴わない。
+     * 囲って保存(ラッソエクスポート)からSAF経由で直接書き出す際にも使う。
+     */
+    fun toGeoJsonString(measurements: List<Measurement>): String {
         val features = measurements.joinToString(",\n") { m ->
             """
             {
@@ -37,15 +41,17 @@ object DataExporter {
             }
             """.trimIndent()
         }
-        val geojson = """
+        return """
         {
           "type": "FeatureCollection",
           "metadata": {},
           "features": [$features]
         }
         """.trimIndent()
-        return writeTemp(context, "coverage_export.geojson", geojson)
     }
+
+    fun toGeoJson(measurements: List<Measurement>, context: Context): File =
+        writeTemp(context, "coverage_export.geojson", toGeoJsonString(measurements))
 
     private fun writeTemp(context: Context, name: String, content: String): File {
         val file = File(context.cacheDir, name)

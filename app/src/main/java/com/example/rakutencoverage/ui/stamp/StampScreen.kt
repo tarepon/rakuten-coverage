@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,10 +21,19 @@ import com.example.rakutencoverage.data.SpotType
 import com.example.rakutencoverage.data.StampRecord
 import com.example.rakutencoverage.ui.map.MapViewModel
 
+/**
+ * スタンプラリー表示。Scaffold等の外殻を持たない埋め込み用コンポーザブル。
+ * チェックイン画面(CheckInScreen)の「スタンプ」タブから呼び出される。
+ *
+ * スポットマスタ(道の駅1,145件等)を全件描画せず、記録(StampRecord)ベースで表示する。
+ * マスタから消えたスポットの達成記録も record 側に保存された名前でそのまま表示される。
+ */
 @Composable
-fun StampScreen(vm: MapViewModel = viewModel()) {
+fun StampContent(vm: MapViewModel = viewModel()) {
     val stamps by vm.stamps.collectAsState()
     val spotsByType by vm.spotsByType.collectAsState()
+
+    val sortedStamps = remember(stamps) { stamps.sortedByDescending { it.achievedAt } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -39,107 +49,87 @@ fun StampScreen(vm: MapViewModel = viewModel()) {
             )
         }
 
-        SpotType.entries.forEach { type ->
-            val spots = spotsByType[type] ?: emptyList()
-            val achievedIds = stamps.filter { it.spotType == type.name }.map { it.spotId }.toSet()
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SpotType.entries.forEach { type ->
+                    val masterCount = spotsByType[type]?.size ?: 0
+                    val achievedCount = stamps.count { it.spotType == type.name }
+                    StampProgressCard(type = type, achievedCount = achievedCount, masterCount = masterCount)
+                }
+            }
+        }
 
+        if (sortedStamps.isEmpty()) {
             item {
-                StampCategorySection(
-                    type = type,
-                    spots = spots.map { it.id to it.name },
-                    achievedIds = achievedIds,
-                    stamps = stamps
+                Text(
+                    "まだスタンプがありません。チェックインして集めましょう！",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        } else {
+            items(sortedStamps, key = { it.spotId }) { stamp ->
+                StampRecordRow(stamp)
             }
         }
     }
 }
 
+/** 種別ごとの進捗カード。分母はスポットマスタ件数、分子はStampRecordの達成数。 */
 @Composable
-private fun StampCategorySection(
-    type: SpotType,
-    spots: List<Pair<String, String>>,
-    achievedIds: Set<String>,
-    stamps: List<StampRecord>
-) {
+private fun StampProgressCard(type: SpotType, achievedCount: Int, masterCount: Int) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // ヘッダー
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(type.icon, fontSize = 24.sp)
-                Column {
-                    Text(type.label, style = MaterialTheme.typography.titleSmall)
-                    if (spots.isNotEmpty()) {
-                        Text(
-                            "${achievedIds.size} / ${spots.size} 達成",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            if (spots.isEmpty()) {
-                Spacer(Modifier.height(8.dp))
                 Text(
-                    "GeoJSONファイル追加で有効になります",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "${type.label} $achievedCount/$masterCount",
+                    style = MaterialTheme.typography.titleSmall
                 )
-                return@Column
             }
-
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { if (spots.isEmpty()) 0f else achievedIds.size.toFloat() / spots.size },
+                progress = {
+                    if (masterCount == 0) 0f else (achievedCount.toFloat() / masterCount).coerceIn(0f, 1f)
+                },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(12.dp))
+        }
+    }
+}
 
-            // スポット一覧
-            spots.forEach { (id, name) ->
-                val achieved = id in achievedIds
-                val stamp = stamps.firstOrNull { it.spotId == id }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (achieved) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            if (achieved) "✓" else "",
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
-                    Column {
-                        Text(
-                            name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (achieved) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        stamp?.let {
-                            Text(
-                                it.achievedAt.take(10),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
+/** 達成済みスタンプ1件の行。マスタに存在しないspotIdでも record の内容だけで表示できる。 */
+@Composable
+private fun StampRecordRow(stamp: StampRecord) {
+    val icon = SpotType.entries.firstOrNull { it.name == stamp.spotType }?.icon ?: "🎫"
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✓", color = Color.White, fontSize = 14.sp)
+            }
+            Column {
+                Text(
+                    "$icon ${stamp.spotName}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    stamp.achievedAt.take(10),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

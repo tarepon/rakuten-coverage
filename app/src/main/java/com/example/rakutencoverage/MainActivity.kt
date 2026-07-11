@@ -3,6 +3,7 @@ package com.example.rakutencoverage
 import android.Manifest
 import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,16 +22,19 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
+import com.example.rakutencoverage.ui.checkin.CheckInScreen
 import com.example.rakutencoverage.ui.collection.CollectionScreen
 import com.example.rakutencoverage.ui.export.ExportScreen
 import com.example.rakutencoverage.ui.history.HistoryScreen
 import com.example.rakutencoverage.ui.map.MapScreen
 import com.example.rakutencoverage.ui.map.MapViewModel
-import com.example.rakutencoverage.ui.stamp.StampScreen
 import com.example.rakutencoverage.ui.theme.RakutenCoverageTheme
 import com.example.rakutencoverage.widget.EXTRA_AUTO_MEASURE
 
@@ -72,11 +76,23 @@ class MainActivity : ComponentActivity() {
 
 private data class NavItem(val route: String, val label: String, val icon: String)
 
+/** ナビ項目のアイコン。showBadge=true の間はBadgedBox+Badge(小ドット)で包んでチェックイン中を示す */
+@Composable
+private fun NavIcon(icon: String, fontSize: androidx.compose.ui.unit.TextUnit, showBadge: Boolean) {
+    if (showBadge) {
+        BadgedBox(badge = { Badge() }) {
+            Text(icon, fontSize = fontSize)
+        }
+    } else {
+        Text(icon, fontSize = fontSize)
+    }
+}
+
 private val navItems = listOf(
     NavItem("map",        "マップ",       "🗺️"),
+    NavItem("checkin",    "チェックイン", "🎫"),
     NavItem("history",    "履歴",         "📋"),
     NavItem("export",     "エクスポート", "📤"),
-    NavItem("stamp",      "スタンプ",     "🏅"),
     NavItem("collection", "図鑑",         "📖"),
 )
 
@@ -87,6 +103,7 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
     val currentRoute = backstackEntry?.destination?.route
     val mapViewModel: MapViewModel = viewModel()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val activeCheckIn by mapViewModel.checkIn.collectAsState()
 
     // ウィジェットの「起動して計測」から起動された場合、マップに遷移して計測開始
     LaunchedEffect(Unit) {
@@ -119,6 +136,7 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
                 windowInsets = if (isLandscape) WindowInsets(0) else NavigationBarDefaults.windowInsets
             ) {
                 navItems.forEach { item ->
+                    val showBadge = item.route == "checkin" && activeCheckIn != null
                     NavigationBarItem(
                         selected = currentRoute == item.route,
                         onClick = { navigate(item.route) },
@@ -128,11 +146,11 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(item.icon, fontSize = 22.sp)
+                                    NavIcon(item.icon, 22.sp, showBadge)
                                     Text(item.label, fontSize = 11.sp)
                                 }
                             } else {
-                                Text(item.icon, fontSize = 20.sp)
+                                NavIcon(item.icon, 20.sp, showBadge)
                             }
                         },
                         label = if (isLandscape) null else ({ Text(item.label) }),
@@ -147,11 +165,44 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
             startDestination = "map",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("map")        { MapScreen(mapViewModel) }
+            composable("map") {
+                MapScreen(
+                    mapViewModel,
+                    onNavigateToCheckIn = { navController.navigate("checkin") }
+                )
+            }
             composable("history")    { HistoryScreen(mapViewModel) }
             composable("export")     { ExportScreen(mapViewModel) }
-            composable("stamp")      { StampScreen() }
             composable("collection") { CollectionScreen() }
+            // チェックインはボトムナビのトップレベル画面(記録/スタンプの2タブ)
+            composable("checkin") {
+                CheckInScreen(
+                    mapViewModel = mapViewModel,
+                    onNewCheckIn = { spotId, seatLabel ->
+                        val spotParam = spotId?.let { "spotId=${Uri.encode(it)}" } ?: ""
+                        val seatParam = seatLabel?.let { "seatLabel=${Uri.encode(it)}" } ?: ""
+                        val query = listOf(spotParam, seatParam).filter { it.isNotEmpty() }.joinToString("&")
+                        navController.navigate(if (query.isEmpty()) "checkin_input" else "checkin_input?$query")
+                    }
+                )
+            }
+            composable(
+                route = "checkin_input?spotId={spotId}&seatLabel={seatLabel}",
+                arguments = listOf(
+                    navArgument("spotId") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("seatLabel") { type = NavType.StringType; defaultValue = "" }
+                )
+            ) { backStackEntry ->
+                val spotId = backStackEntry.arguments?.getString("spotId").orEmpty()
+                val seatLabel = backStackEntry.arguments?.getString("seatLabel").orEmpty()
+                CheckInInputScreen(
+                    mapViewModel = mapViewModel,
+                    initialSpotId = spotId.ifBlank { null },
+                    initialSeatLabel = seatLabel,
+                    onBack = { navController.popBackStack() },
+                    onCheckedIn = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

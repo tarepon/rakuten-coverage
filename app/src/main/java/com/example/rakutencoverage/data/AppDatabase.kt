@@ -7,12 +7,17 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Measurement::class, StampRecord::class, CollectionRecord::class], version = 5, exportSchema = false)
+@Database(
+    entities = [Measurement::class, StampRecord::class, CollectionRecord::class, CheckInRecord::class],
+    version = 6,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun measurementDao(): MeasurementDao
     abstract fun stampDao(): StampDao
     abstract fun collectionDao(): CollectionDao
+    abstract fun checkInDao(): CheckInDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -62,6 +67,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS checkin_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        spotId TEXT NOT NULL,
+                        spotType TEXT NOT NULL,
+                        spotName TEXT NOT NULL,
+                        latitude REAL,
+                        longitude REAL,
+                        timestamp TEXT NOT NULL,
+                        seatLabel TEXT,
+                        gamePhase TEXT,
+                        photoPath TEXT,
+                        downloadMbps REAL,
+                        uploadMbps REAL,
+                        latencyMs INTEGER
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -69,7 +96,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "rakuten_coverage.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { INSTANCE = it }
             }
