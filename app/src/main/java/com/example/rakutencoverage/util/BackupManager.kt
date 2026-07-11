@@ -89,6 +89,7 @@ object BackupManager {
                     putOpt("downloadMbps", c.downloadMbps)
                     putOpt("uploadMbps", c.uploadMbps)
                     putOpt("latencyMs", c.latencyMs)
+                    putOpt("memo", c.memo)
                 })
             }
         })
@@ -164,7 +165,8 @@ object BackupManager {
                     photoPath    = o.optStringOrNull("photoPath"),
                     downloadMbps = o.optDoubleOrNull("downloadMbps"),
                     uploadMbps   = o.optDoubleOrNull("uploadMbps"),
-                    latencyMs    = if (o.has("latencyMs") && !o.isNull("latencyMs")) o.getInt("latencyMs") else null
+                    latencyMs    = if (o.has("latencyMs") && !o.isNull("latencyMs")) o.getInt("latencyMs") else null,
+                    memo         = o.optStringOrNull("memo")
                 )
             }
         } ?: emptyList()

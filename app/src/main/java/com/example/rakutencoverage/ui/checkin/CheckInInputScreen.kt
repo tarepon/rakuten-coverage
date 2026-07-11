@@ -72,6 +72,8 @@ fun CheckInInputScreen(
     var selectedPhase by remember { mutableStateOf(GamePhase.PRE_GAME) }
     var phaseExpanded by remember { mutableStateOf(false) }
 
+    var memo by remember { mutableStateOf("") }
+
     var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var cameraTargetUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -246,6 +248,22 @@ fun CheckInInputScreen(
 
             HorizontalDivider()
 
+            // メモ: ARENAの自席・フェーズとは独立し、全スポット種別で表示する
+            Column {
+                Text("📝 メモ（任意）", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = memo,
+                    onValueChange = { memo = it },
+                    placeholder = { Text("フードコート付近、第2駐車場側 など") },
+                    singleLine = false,
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            HorizontalDivider()
+
             // 写真
             Column {
                 Text("写真（任意）", style = MaterialTheme.typography.labelMedium)
@@ -342,7 +360,8 @@ fun CheckInInputScreen(
                             photoPath = photoPath,
                             downloadMbps = speedResult?.downloadMbps,
                             uploadMbps = speedResult?.uploadMbps,
-                            latencyMs = speedResult?.latencyMs
+                            latencyMs = speedResult?.latencyMs,
+                            memo = memo.ifBlank { null }
                         )
                         withContext(Dispatchers.IO) {
                             AppDatabase.getInstance(context).checkInDao().insert(record)

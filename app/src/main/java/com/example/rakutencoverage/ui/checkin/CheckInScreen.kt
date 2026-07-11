@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -367,6 +368,15 @@ private fun CheckInRow(record: CheckInRecord, onClick: () -> Unit, onQuickAdd: (
                     style = MaterialTheme.typography.labelSmall
                 )
             }
+            if (!record.memo.isNullOrBlank()) {
+                Text(
+                    "📝 ${record.memo}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         IconButton(onClick = onQuickAdd) { Text("＋") }
     }
@@ -395,6 +405,7 @@ private fun CheckInDetailDialog(record: CheckInRecord, onDismiss: () -> Unit) {
                 if (record.downloadMbps != null || record.uploadMbps != null || record.latencyMs != null) {
                     Text(speedAnnotatedString(record.downloadMbps, record.uploadMbps, record.latencyMs))
                 }
+                if (!record.memo.isNullOrBlank()) Text("📝 ${record.memo}")
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("閉じる") } }
@@ -419,6 +430,7 @@ private fun checkInRecordsToJson(records: List<CheckInRecord>): String {
             putOpt("downloadMbps", r.downloadMbps)
             putOpt("uploadMbps", r.uploadMbps)
             putOpt("latencyMs", r.latencyMs)
+            putOpt("memo", r.memo)
         })
     }
     return arr.toString(2)

@@ -20,6 +20,7 @@ import androidx.room.PrimaryKey
  * @property downloadMbps  スピードテストのダウンロード結果。未実施は null
  * @property uploadMbps    スピードテストのアップロード結果。未実施は null
  * @property latencyMs     スピードテストのレイテンシ結果。未実施は null
+ * @property memo          自由記述メモ(任意)。全スポット種別共通。未入力は null
  */
 @Entity(tableName = "checkin_records")
 data class CheckInRecord(
@@ -35,5 +36,6 @@ data class CheckInRecord(
     val photoPath: String?,
     val downloadMbps: Double?,
     val uploadMbps: Double?,
-    val latencyMs: Int?
+    val latencyMs: Int?,
+    val memo: String? = null
 )
