@@ -1,0 +1,2566 @@
+{
+ "type": "FeatureCollection",
+ "attribution": "イオン公式サイト店舗一覧(業態:イオンモール)およびOpenStreetMap(© OpenStreetMap contributors, ODbL)のOverpass API/Nominatimを基に作成(2026年7月時点)",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_001",
+    "name": "イオンモール札幌苗穂",
+    "pref": "北海道",
+    "city": "札幌市東区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.4038237,
+     43.0799188
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_002",
+    "name": "イオンモール札幌発寒",
+    "pref": "北海道",
+    "city": "札幌市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.2772853,
+     43.0962322
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_003",
+    "name": "イオンモール札幌平岡",
+    "pref": "北海道",
+    "city": "札幌市清田区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.4585445,
+     42.9971132
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_004",
+    "name": "イオンモール旭川駅前",
+    "pref": "北海道",
+    "city": "旭川市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     142.3574416,
+     43.7636845
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_005",
+    "name": "イオンモール旭川西",
+    "pref": "北海道",
+    "city": "旭川市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     142.3269591,
+     43.7937863
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_006",
+    "name": "イオンモール釧路昭和",
+    "pref": "北海道",
+    "city": "釧路市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     144.3599773,
+     43.0266209
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_007",
+    "name": "イオンモール苫小牧",
+    "pref": "北海道",
+    "city": "苫小牧市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.6425124,
+     42.6561764
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_008",
+    "name": "イオンモールつがる柏",
+    "pref": "青森県",
+    "city": "つがる市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.4171739,
+     40.8027657
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_009",
+    "name": "イオンモール下田",
+    "pref": "青森県",
+    "city": "上北郡おいらせ町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.4180655,
+     40.6022275
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_010",
+    "name": "イオンモール盛岡",
+    "pref": "岩手県",
+    "city": "盛岡市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.0989623,
+     39.71159
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_011",
+    "name": "イオンモール盛岡南",
+    "pref": "岩手県",
+    "city": "盛岡市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.128245,
+     39.6837118
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_012",
+    "name": "イオンモール仙台上杉",
+    "pref": "宮城県",
+    "city": "仙台市青葉区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.8724325,
+     38.2761839
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_013",
+    "name": "イオンモール石巻",
+    "pref": "宮城県",
+    "city": "石巻市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     141.2659183,
+     38.4480892
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_014",
+    "name": "イオンモール名取",
+    "pref": "宮城県",
+    "city": "名取市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.8957787,
+     38.1640611
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_015",
+    "name": "イオンモール富谷",
+    "pref": "宮城県",
+    "city": "富谷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.8748197,
+     38.3647227
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_016",
+    "name": "イオンモール新利府",
+    "pref": "宮城県",
+    "city": "宮城郡利府町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.9721824,
+     38.3225372
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_017",
+    "name": "イオンモール新利府 北館",
+    "pref": "宮城県",
+    "city": "宮城郡利府町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.9722245,
+     38.3264728
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_018",
+    "name": "イオンモール秋田",
+    "pref": "秋田県",
+    "city": "秋田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.1607954,
+     39.6632512
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_019",
+    "name": "イオンモール大曲",
+    "pref": "秋田県",
+    "city": "大仙市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.5091082,
+     39.4379935
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_020",
+    "name": "イオンモール山形南",
+    "pref": "山形県",
+    "city": "山形市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.3053992,
+     38.2267228
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_021",
+    "name": "イオンモール天童",
+    "pref": "山形県",
+    "city": "天童市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.3632553,
+     38.3438619
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_022",
+    "name": "イオンモール三川",
+    "pref": "山形県",
+    "city": "東田川郡三川町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.8352637,
+     38.8160213
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_023",
+    "name": "イオンモールいわき小名浜",
+    "pref": "福島県",
+    "city": "いわき市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.9038981,
+     36.9466819
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_024",
+    "name": "イオンモール水戸内原",
+    "pref": "茨城県",
+    "city": "水戸市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.3587119,
+     36.3744847
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_025",
+    "name": "イオンモール土浦",
+    "pref": "茨城県",
+    "city": "土浦市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.1801389,
+     36.0801842
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_026",
+    "name": "イオンモール下妻",
+    "pref": "茨城県",
+    "city": "下妻市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.9893599,
+     36.1902384
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_027",
+    "name": "イオンモールつくば",
+    "pref": "茨城県",
+    "city": "つくば市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.1329378,
+     36.0347446
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_028",
+    "name": "イオンモール佐野新都市",
+    "pref": "栃木県",
+    "city": "佐野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6061577,
+     36.2994669
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_029",
+    "name": "イオンモール小山",
+    "pref": "栃木県",
+    "city": "小山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.8403377,
+     36.3215723
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_030",
+    "name": "イオンモール高崎",
+    "pref": "群馬県",
+    "city": "高崎市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.006882,
+     36.3905501
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_031",
+    "name": "イオンモール太田",
+    "pref": "群馬県",
+    "city": "太田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.4002723,
+     36.2937275
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_032",
+    "name": "イオンモール浦和美園",
+    "pref": "埼玉県",
+    "city": "さいたま市緑区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.7315846,
+     35.8909511
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_033",
+    "name": "イオンモール与野",
+    "pref": "埼玉県",
+    "city": "さいたま市中央区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6152972,
+     35.890916
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_034",
+    "name": "イオンモール川口",
+    "pref": "埼玉県",
+    "city": "川口市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.7238234,
+     35.8384718
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_035",
+    "name": "イオンモール川口前川",
+    "pref": "埼玉県",
+    "city": "川口市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.7072236,
+     35.8335329
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_036",
+    "name": "イオンモール春日部",
+    "pref": "埼玉県",
+    "city": "春日部市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.7890761,
+     35.9880052
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_037",
+    "name": "イオンモール羽生",
+    "pref": "埼玉県",
+    "city": "羽生市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.5416559,
+     36.1430611
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_038",
+    "name": "イオンモール上尾",
+    "pref": "埼玉県",
+    "city": "上尾市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6003399,
+     35.9649363
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_039",
+    "name": "レイクタウンアウトレット",
+    "pref": "埼玉県",
+    "city": "越谷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.8251514,
+     35.8803421
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_040",
+    "name": "イオンレイクタウンmori",
+    "pref": "埼玉県",
+    "city": "越谷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.8282993,
+     35.8823516
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_041",
+    "name": "イオンレイクタウンkaze",
+    "pref": "埼玉県",
+    "city": "越谷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.8250843,
+     35.8777421
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_042",
+    "name": "イオンモール北戸田",
+    "pref": "埼玉県",
+    "city": "戸田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6527976,
+     35.8268919
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_043",
+    "name": "イオンモール幕張新都心",
+    "pref": "千葉県",
+    "city": "千葉市美浜区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.028753,
+     35.6546849
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_044",
+    "name": "イオンマリンピア専門館",
+    "pref": "千葉県",
+    "city": "千葉市美浜区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.0731759,
+     35.6284417
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_045",
+    "name": "イオンモール銚子",
+    "pref": "千葉県",
+    "city": "銚子市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.7879481,
+     35.7100059
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_046",
+    "name": "イオンモール船橋",
+    "pref": "千葉県",
+    "city": "船橋市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.9784313,
+     35.7119594
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_047",
+    "name": "イオンモール木更津",
+    "pref": "千葉県",
+    "city": "木更津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.9077572,
+     35.3665787
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_048",
+    "name": "イオンモール成田",
+    "pref": "千葉県",
+    "city": "成田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.3185422,
+     35.795293
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_049",
+    "name": "イオンモール津田沼North",
+    "pref": "千葉県",
+    "city": "習志野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.0247484,
+     35.6902886
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_050",
+    "name": "イオンモール津田沼South",
+    "pref": "千葉県",
+    "city": "習志野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.0239778,
+     35.6897567
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_051",
+    "name": "イオンモール柏",
+    "pref": "千葉県",
+    "city": "柏市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.9616377,
+     35.8518067
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_052",
+    "name": "イオンモール八千代緑が丘",
+    "pref": "千葉県",
+    "city": "八千代市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.0729372,
+     35.728092
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_053",
+    "name": "イオンモール富津",
+    "pref": "千葉県",
+    "city": "富津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.846081,
+     35.3302461
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_054",
+    "name": "イオンモール千葉ニュータウン",
+    "pref": "千葉県",
+    "city": "印西市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     140.11227,
+     35.802322
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_055",
+    "name": "JIYUGAOKA de aone",
+    "pref": "東京都",
+    "city": "目黒区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6666773,
+     35.6077895
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_056",
+    "name": "イオンモール多摩平の森",
+    "pref": "東京都",
+    "city": "日野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.3809258,
+     35.6621134
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_057",
+    "name": "イオンモール東久留米",
+    "pref": "東京都",
+    "city": "東久留米市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.526815,
+     35.7451359
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_058",
+    "name": "イオンモールむさし村山",
+    "pref": "東京都",
+    "city": "武蔵村山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.3849219,
+     35.7463862
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_059",
+    "name": "イオンモール日の出",
+    "pref": "東京都",
+    "city": "西多摩郡日の出町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.275239,
+     35.7348033
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_060",
+    "name": "CeeU Yokohama",
+    "pref": "神奈川県",
+    "city": "横浜市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.6174195,
+     35.4644597
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_061",
+    "name": "THE OUTLETS SHONAN HIRATSUKA",
+    "pref": "神奈川県",
+    "city": "平塚市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.3632797,
+     35.3910503
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_062",
+    "name": "イオンモール大和",
+    "pref": "神奈川県",
+    "city": "大和市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.4580514,
+     35.4889252
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_063",
+    "name": "イオンモール座間",
+    "pref": "神奈川県",
+    "city": "座間市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.4251316,
+     35.5006419
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_064",
+    "name": "イオンモール新潟亀田インター",
+    "pref": "新潟県",
+    "city": "新潟市江南区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.0814226,
+     37.8762605
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_065",
+    "name": "イオンモール新発田",
+    "pref": "新潟県",
+    "city": "新発田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     139.3092701,
+     37.9425495
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_066",
+    "name": "イオンモール高岡",
+    "pref": "富山県",
+    "city": "高岡市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.0168387,
+     36.7239961
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_067",
+    "name": "イオンモールとなみ",
+    "pref": "富山県",
+    "city": "砺波市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9472937,
+     36.6418861
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_068",
+    "name": "イオンモール新小松",
+    "pref": "石川県",
+    "city": "小松市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.4669569,
+     36.3950816
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_069",
+    "name": "イオンモールかほく",
+    "pref": "石川県",
+    "city": "かほく市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.7013266,
+     36.7090613
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_070",
+    "name": "イオンモール白山",
+    "pref": "石川県",
+    "city": "白山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.5820415,
+     36.5445491
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_071",
+    "name": "イオンモール甲府昭和",
+    "pref": "山梨県",
+    "city": "中巨摩郡昭和町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     138.5270399,
+     35.6225839
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_072",
+    "name": "イオンモール松本",
+    "pref": "長野県",
+    "city": "松本市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.9783855,
+     36.2344336
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_073",
+    "name": "イオンモール須坂",
+    "pref": "長野県",
+    "city": "須坂市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     138.2722577,
+     36.6395876
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_074",
+    "name": "イオンモール佐久平",
+    "pref": "長野県",
+    "city": "佐久市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     138.4641554,
+     36.2756309
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_075",
+    "name": "イオンモール大垣",
+    "pref": "岐阜県",
+    "city": "大垣市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.6138099,
+     35.3368499
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_076",
+    "name": "イオンモール土岐",
+    "pref": "岐阜県",
+    "city": "土岐市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.1543881,
+     35.3472689
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_077",
+    "name": "イオンモール各務原インター",
+    "pref": "岐阜県",
+    "city": "各務原市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.8245349,
+     35.3917467
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_078",
+    "name": "イオンモール浜松市野",
+    "pref": "静岡県",
+    "city": "浜松市中央区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.763158,
+     34.7398279
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_079",
+    "name": "イオンモール浜松志都呂",
+    "pref": "静岡県",
+    "city": "浜松市中央区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.6509722,
+     34.6967583
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_080",
+    "name": "イオンモール富士宮",
+    "pref": "静岡県",
+    "city": "富士宮市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     138.6120712,
+     35.2207705
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_081",
+    "name": "イオンモール熱田",
+    "pref": "愛知県",
+    "city": "名古屋市熱田区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9093199,
+     35.1364578
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_082",
+    "name": "イオンモール新瑞橋",
+    "pref": "愛知県",
+    "city": "名古屋市南区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9350939,
+     35.1144588
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_083",
+    "name": "イオンモール大高",
+    "pref": "愛知県",
+    "city": "名古屋市緑区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9475926,
+     35.0529318
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_084",
+    "name": "イオンモール名古屋茶屋",
+    "pref": "愛知県",
+    "city": "名古屋市港区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.8246472,
+     35.1036828
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_085",
+    "name": "イオンモールナゴヤドーム前",
+    "pref": "愛知県",
+    "city": "名古屋市東区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9444241,
+     35.1872095
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_086",
+    "name": "mozoワンダーシティ",
+    "pref": "愛知県",
+    "city": "名古屋市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.8842376,
+     35.2253777
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_087",
+    "name": "イオンモールNagoya Noritake Garden",
+    "pref": "愛知県",
+    "city": "名古屋市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.879719,
+     35.181068
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_088",
+    "name": "イオンモール岡崎",
+    "pref": "愛知県",
+    "city": "岡崎市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.1640931,
+     34.9376865
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_089",
+    "name": "イオンモール木曽川",
+    "pref": "愛知県",
+    "city": "一宮市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.7739198,
+     35.3494109
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_090",
+    "name": "イオンモール豊川",
+    "pref": "愛知県",
+    "city": "豊川市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.3510719,
+     34.825532
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_091",
+    "name": "イオンモール常滑",
+    "pref": "愛知県",
+    "city": "常滑市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.826184,
+     34.8821613
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_092",
+    "name": "イオンモール長久手",
+    "pref": "愛知県",
+    "city": "長久手市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     137.0507961,
+     35.17354
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_093",
+    "name": "イオンモール扶桑",
+    "pref": "愛知県",
+    "city": "丹羽郡扶桑町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9003592,
+     35.3613594
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_094",
+    "name": "イオンモール東浦",
+    "pref": "愛知県",
+    "city": "知多郡東浦町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.9745994,
+     34.9787972
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_095",
+    "name": "イオンモール津南",
+    "pref": "三重県",
+    "city": "津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.5176558,
+     34.6710904
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_096",
+    "name": "イオンモール四日市北",
+    "pref": "三重県",
+    "city": "四日市市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.6569648,
+     35.0077998
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_097",
+    "name": "イオンモール桑名",
+    "pref": "三重県",
+    "city": "桑名市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.6627088,
+     35.0724236
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_098",
+    "name": "イオンモール鈴鹿",
+    "pref": "三重県",
+    "city": "鈴鹿市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.5315964,
+     34.8716052
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_099",
+    "name": "イオンモール東員",
+    "pref": "三重県",
+    "city": "員弁郡東員町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.580033,
+     35.0617736
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_100",
+    "name": "イオンモール明和",
+    "pref": "三重県",
+    "city": "多気郡明和町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.6145169,
+     34.58121
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_101",
+    "name": "イオンモール草津",
+    "pref": "滋賀県",
+    "city": "草津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.9122858,
+     34.9979355
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_102",
+    "name": "イオンモール京都桂川",
+    "pref": "京都府",
+    "city": "京都市南区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.7079478,
+     34.9636787
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_103",
+    "name": "イオンモールKYOTO",
+    "pref": "京都府",
+    "city": "京都市南区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.7546245,
+     34.9827325
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_104",
+    "name": "イオンモール京都五条",
+    "pref": "京都府",
+    "city": "京都市右京区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.72697,
+     34.9975343
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_106",
+    "name": "イオンモール高の原",
+    "pref": "京都府",
+    "city": "木津川市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.790344,
+     34.7250747
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_107",
+    "name": "イオンモール久御山",
+    "pref": "京都府",
+    "city": "久世郡久御山町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.7461266,
+     34.8932478
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_108",
+    "name": "イオンモール大阪ドームシティ",
+    "pref": "大阪府",
+    "city": "大阪市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.477939,
+     34.6703688
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_109",
+    "name": "イオンモール鶴見緑地",
+    "pref": "大阪府",
+    "city": "大阪市鶴見区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5668336,
+     34.704365
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_110",
+    "name": "イオンモール堺北花田",
+    "pref": "大阪府",
+    "city": "堺市北区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5149811,
+     34.5845157
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_111",
+    "name": "イオンモール堺鉄砲町",
+    "pref": "大阪府",
+    "city": "堺市堺区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.4805927,
+     34.594441
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_113",
+    "name": "イオンモール大日",
+    "pref": "大阪府",
+    "city": "守口市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5806491,
+     34.7496383
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_114",
+    "name": "イオンモール茨木",
+    "pref": "大阪府",
+    "city": "茨木市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5588492,
+     34.8107075
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_115",
+    "name": "イオンモール日根野",
+    "pref": "大阪府",
+    "city": "泉佐野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.333648,
+     34.393325
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_116",
+    "name": "イオンモールりんくう泉南",
+    "pref": "大阪府",
+    "city": "泉南市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.2677294,
+     34.3806962
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_117",
+    "name": "イオンモール四條畷",
+    "pref": "大阪府",
+    "city": "四條畷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.6291876,
+     34.7463772
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_118",
+    "name": "神戸ハーバーランドumie",
+    "pref": "兵庫県",
+    "city": "神戸市中央区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.1833126,
+     34.6798492
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_119",
+    "name": "イオンモール神戸北",
+    "pref": "兵庫県",
+    "city": "神戸市北区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.1952697,
+     34.8604796
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_120",
+    "name": "イオンモール神戸南",
+    "pref": "兵庫県",
+    "city": "神戸市兵庫区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.1743932,
+     34.6657435
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_121",
+    "name": "イオンモール姫路大津",
+    "pref": "兵庫県",
+    "city": "姫路市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.6066786,
+     34.8066061
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_122",
+    "name": "イオンモール姫路リバーシティー",
+    "pref": "兵庫県",
+    "city": "姫路市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.6680318,
+     34.7983802
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_123",
+    "name": "イオンモール伊丹",
+    "pref": "兵庫県",
+    "city": "伊丹市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.4237715,
+     34.7817322
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_124",
+    "name": "イオンモール伊丹昆陽",
+    "pref": "兵庫県",
+    "city": "伊丹市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.3816356,
+     34.7846045
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_125",
+    "name": "イオンモール加西北条",
+    "pref": "兵庫県",
+    "city": "加西市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.8283654,
+     34.9304753
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_126",
+    "name": "イオンモール猪名川",
+    "pref": "兵庫県",
+    "city": "川辺郡猪名川町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.3644527,
+     34.9021553
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_127",
+    "name": "イオンモール大和郡山",
+    "pref": "奈良県",
+    "city": "大和郡山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.8019007,
+     34.6509951
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_128",
+    "name": "イオンモール橿原",
+    "pref": "奈良県",
+    "city": "橿原市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.7631017,
+     34.5061932
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_129",
+    "name": "イオンモール奈良登美ヶ丘",
+    "pref": "奈良県",
+    "city": "生駒市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.7505106,
+     34.7256847
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_130",
+    "name": "イオンモール和歌山",
+    "pref": "和歌山県",
+    "city": "和歌山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.1493067,
+     34.2758844
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_131",
+    "name": "イオンモール鳥取北",
+    "pref": "鳥取県",
+    "city": "鳥取市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.200935,
+     35.5236629
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_132",
+    "name": "イオンモール日吉津",
+    "pref": "鳥取県",
+    "city": "西伯郡日吉津村"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.3861806,
+     35.4454129
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_134",
+    "name": "イオンモール岡山",
+    "pref": "岡山県",
+    "city": "岡山市北区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.9173541,
+     34.6620663
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_135",
+    "name": "イオンモール倉敷",
+    "pref": "岡山県",
+    "city": "倉敷市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.746195,
+     34.6032781
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_136",
+    "name": "イオンモール津山インター",
+    "pref": "岡山県",
+    "city": "津山市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.0454103,
+     35.0644914
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_137",
+    "name": "イオンモール広島祇園",
+    "pref": "広島県",
+    "city": "広島市安佐南区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.4615623,
+     34.4435813
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_138",
+    "name": "THE OUTLETS HIROSHIMA",
+    "pref": "広島県",
+    "city": "広島市佐伯区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.3976696,
+     34.4100378
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_139",
+    "name": "イオンモール広島府中",
+    "pref": "広島県",
+    "city": "安芸郡府中町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.4991921,
+     34.3946064
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_140",
+    "name": "イオンモール徳島",
+    "pref": "徳島県",
+    "city": "徳島市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.5734719,
+     34.0617089
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_141",
+    "name": "イオンモール高松",
+    "pref": "香川県",
+    "city": "高松市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     134.0049106,
+     34.3524389
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_142",
+    "name": "イオンモール綾川",
+    "pref": "香川県",
+    "city": "綾歌郡綾川町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.931489,
+     34.2515658
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_143",
+    "name": "イオンモール今治新都市",
+    "pref": "愛媛県",
+    "city": "今治市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.9623915,
+     34.0438137
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_144",
+    "name": "イオンモール新居浜",
+    "pref": "愛媛県",
+    "city": "新居浜市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.267977,
+     33.9548355
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_145",
+    "name": "イオンモール高知",
+    "pref": "高知県",
+    "city": "高知市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     133.5424747,
+     33.5764686
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_146",
+    "name": "イオンモール八幡東",
+    "pref": "福岡県",
+    "city": "北九州市八幡東区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.8113107,
+     33.8699021
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_147",
+    "name": "THE OUTLETS KITAKYUSHU",
+    "pref": "福岡県",
+    "city": "北九州市八幡東区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.8118537,
+     33.8737266
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_148",
+    "name": "イオンモール香椎浜",
+    "pref": "福岡県",
+    "city": "福岡市東区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.4298223,
+     33.6571938
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_149",
+    "name": "イオンモール福岡伊都",
+    "pref": "福岡県",
+    "city": "福岡市西区"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.2582023,
+     33.5774646
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_150",
+    "name": "イオンモール大牟田",
+    "pref": "福岡県",
+    "city": "大牟田市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.4278948,
+     33.03047
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_151",
+    "name": "イオンモール直方",
+    "pref": "福岡県",
+    "city": "直方市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.7505033,
+     33.7686797
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_152",
+    "name": "イオンモール筑紫野",
+    "pref": "福岡県",
+    "city": "筑紫野市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.5267986,
+     33.4808352
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_153",
+    "name": "イオンモール福津",
+    "pref": "福岡県",
+    "city": "福津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.4941052,
+     33.7534
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_154",
+    "name": "イオンモール福岡",
+    "pref": "福岡県",
+    "city": "糟屋郡粕屋町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.4802631,
+     33.5962831
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_155",
+    "name": "イオンモール佐賀大和",
+    "pref": "佐賀県",
+    "city": "佐賀市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.2809775,
+     33.3038857
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_156",
+    "name": "イオンモール宇城",
+    "pref": "熊本県",
+    "city": "宇城市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.7069304,
+     32.5964996
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_157",
+    "name": "大津ショッピングプラザ",
+    "pref": "熊本県",
+    "city": "菊池郡大津町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.86639,
+     32.8760241
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_158",
+    "name": "イオンモール熊本",
+    "pref": "熊本県",
+    "city": "上益城郡嘉島町"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.7435603,
+     32.7381798
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_159",
+    "name": "イオンモール三光",
+    "pref": "大分県",
+    "city": "中津市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     131.1929465,
+     33.5589867
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_160",
+    "name": "イオンモール宮崎",
+    "pref": "宮崎県",
+    "city": "宮崎市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     131.4559923,
+     31.922631
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_161",
+    "name": "イオンモール都城駅前",
+    "pref": "宮崎県",
+    "city": "都城市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     131.0799667,
+     31.735326
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_162",
+    "name": "イオンモールKAGOSHIMA BAY",
+    "pref": "鹿児島県",
+    "city": "鹿児島市"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     130.5367774,
+     31.5276511
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "aeon_163",
+    "name": "イオンモール沖縄ライカム",
+    "pref": "沖縄県",
+    "city": "中頭郡北中城村"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.7959208,
+     26.3142262
+    ]
+   }
+  }
+ ]
+}
