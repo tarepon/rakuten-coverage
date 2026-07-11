@@ -225,7 +225,7 @@ fun CheckInInputScreen(
                         readOnly = true,
                         label = { Text("試合フェーズ") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(phaseExpanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = phaseExpanded,
@@ -443,7 +443,7 @@ private fun SpotPickerSection(
                     readOnly = true,
                     label = { Text("都道府県") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(prefExpanded) },
-                    modifier = Modifier.menuAnchor().width(160.dp)
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).width(160.dp)
                 )
                 ExposedDropdownMenu(
                     expanded = prefExpanded,
