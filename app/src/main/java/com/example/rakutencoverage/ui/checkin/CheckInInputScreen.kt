@@ -67,7 +67,7 @@ fun CheckInInputScreen(
 
     var selectedType by remember { mutableStateOf(SpotType.ARENA) }
     var selectedSpot by remember { mutableStateOf<Spot?>(null) }
-    var showSpotPicker by remember { mutableStateOf(initialSpotId == null) }
+    var spotPickerSheetOpen by remember { mutableStateOf(false) }
     var seatLabel by remember { mutableStateOf(initialSeatLabel) }
     var selectedPhase by remember { mutableStateOf(GamePhase.PRE_GAME) }
     var phaseExpanded by remember { mutableStateOf(false) }
@@ -175,35 +175,38 @@ fun CheckInInputScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // スポット選択: プリフィル済みなら選択済みカード、それ以外(または「変更」後)は通常の選択UI
+            // スポット選択: コンパクトな選択フィールド。タップでModalBottomSheetを開く
             val currentSelected = selectedSpot
-            if (initialSpotId != null && !showSpotPicker && currentSelected != null) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "${currentSelected.type.icon} ${currentSelected.name}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = { showSpotPicker = true }) { Text("変更") }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { spotPickerSheetOpen = true }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (currentSelected == null) {
+                        Text("📍 スポットを選択", style = MaterialTheme.typography.bodyLarge)
+                        Text("▼", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "${currentSelected.type.icon} ${currentSelected.name}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                if (currentSelected.type == SpotType.ARENA) "${currentSelected.pref}・${currentSelected.club}"
+                                else "${currentSelected.pref} ${currentSelected.city}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text("変更", color = MaterialTheme.colorScheme.primary)
                     }
                 }
-            } else {
-                SpotPickerSection(
-                    spotsByType = spotsByType,
-                    selectedType = selectedType,
-                    onTypeChange = { selectedType = it; selectedSpot = null },
-                    selectedSpot = selectedSpot,
-                    onSpotSelected = { spot ->
-                        selectedSpot = spot
-                        showSpotPicker = false
-                    },
-                    spotDistances = spotDistances
-                )
             }
 
             if (selectedType == SpotType.ARENA) {
@@ -359,11 +362,38 @@ fun CheckInInputScreen(
             }
         }
     }
+
+    // スポット選択ボトムシート: ほぼ全画面高さで種別・検索・絞り込み・一覧を表示する
+    if (spotPickerSheetOpen) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { spotPickerSheetOpen = false },
+            sheetState = sheetState
+        ) {
+            SpotPickerSection(
+                spotsByType = spotsByType,
+                selectedType = selectedType,
+                onTypeChange = { selectedType = it; selectedSpot = null },
+                selectedSpot = selectedSpot,
+                onSpotSelected = { spot ->
+                    selectedSpot = spot
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) spotPickerSheetOpen = false
+                    }
+                },
+                spotDistances = spotDistances,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            )
+        }
+    }
 }
 
 /**
  * スポット選択UI。種別・検索・都道府県/距離/ディビジョンの絞り込みと、
  * 該当件数・LazyColumnによるスポット一覧を表示する。
+ * ModalBottomSheet内に配置される想定で、LazyColumnはweight(1f)でシート内の残り全高を使う。
  * 全件(道の駅1,145件等)をComposeしないよう、常にLazyColumnで描画する。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -374,7 +404,8 @@ private fun SpotPickerSection(
     onTypeChange: (SpotType) -> Unit,
     selectedSpot: Spot?,
     onSpotSelected: (Spot) -> Unit,
-    spotDistances: Map<String, Float>
+    spotDistances: Map<String, Float>,
+    modifier: Modifier = Modifier
 ) {
     var query by remember { mutableStateOf("") }
     var selectedPref by remember { mutableStateOf<String?>(null) }
@@ -404,7 +435,7 @@ private fun SpotPickerSection(
         )
     }
 
-    Column {
+    Column(modifier = modifier) {
         // スポット種別
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SpotType.entries.forEachIndexed { index, type ->
@@ -505,7 +536,7 @@ private fun SpotPickerSection(
                 modifier = Modifier.padding(8.dp)
             )
         } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth().height(320.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 items(filteredSpots, key = { it.id }) { spot ->
                     val isSelected = selectedSpot?.id == spot.id
                     val distance = spotDistances[spot.id]
