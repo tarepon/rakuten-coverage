@@ -103,7 +103,8 @@ class NetworkInfoCollector(private val context: Context) {
 
     /**
      * allCellInfo から最初のセル情報を取得し、バンド名と RSSI を返す。
-     * Android Q (API 29) 未満はバンド取得不可のため (null, null) を返す。
+     * Android Q (API 29) 未満はセル情報取得不可のため (null, null, null) を返す。
+     * バンド名 (CellIdentityNr/Lte.bands) は API 30 (R) 以上でのみ取得可。API 29 では null。
      * 5G (NR) と LTE のみ対応。それ以外は (null, null)。
      * @return Pair(バンド名, RSSI dBm)
      */
@@ -116,7 +117,9 @@ class NetworkInfoCollector(private val context: Context) {
             is CellInfoNr -> {
                 val identity = info.cellIdentity as CellIdentityNr
                 val signal   = info.cellSignalStrength as CellSignalStrengthNr
-                val bandName = identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = true) }
+                val bandName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = true) }
+                else null
                 val cellId   = identity.nci.takeIf { it != Long.MAX_VALUE }?.toString()
                 Triple(bandName, signal.dbm.takeIfAvailable(), cellId)
             }
