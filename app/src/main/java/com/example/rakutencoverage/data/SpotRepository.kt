@@ -9,7 +9,8 @@ class SpotRepository(private val context: Context) {
 
     private val fileMap = mapOf(
         SpotType.ARENA     to "bleague_arena.geojson",
-        SpotType.MICHINOEKI to "michinoeki.geojson"
+        SpotType.MICHINOEKI to "michinoeki.geojson",
+        SpotType.AEONMALL  to "aeonmall.geojson"
     )
 
     suspend fun loadSpots(type: SpotType): List<Spot> = withContext(Dispatchers.IO) {

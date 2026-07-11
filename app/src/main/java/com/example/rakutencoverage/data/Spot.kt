@@ -2,7 +2,8 @@ package com.example.rakutencoverage.data
 
 enum class SpotType(val label: String, val icon: String) {
     ARENA("Bリーグアリーナ", "🏟️"),
-    MICHINOEKI("道の駅", "🛣️")
+    MICHINOEKI("道の駅", "🛣️"),
+    AEONMALL("イオンモール", "🛍️")
 }
 
 data class Spot(
