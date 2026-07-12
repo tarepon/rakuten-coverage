@@ -17,9 +17,12 @@
 - [x] R8 によるコード縮小・リソース縮小(`minifyEnabled` / `shrinkResources`)
 - [x] 計測DBをクラウドバックアップ・端末間転送から除外(`backup_rules.xml` / `data_extraction_rules.xml`)
 - [x] OpenStreetMap の帰属表示(`CopyrightOverlay`)と User-Agent 設定
-- [x] 権限は最小限(位置情報はフォアグラウンドのみ、バックグラウンド位置情報は未使用)
+- [x] 権限は最小限(ACCESS_BACKGROUND_LOCATION は未使用。バックグラウンド計測は FGS(type=location)+ACCESS_FINE_LOCATION で実現)
 - [x] プライバシーポリシー(`PRIVACY_POLICY.md`)
 - [x] デバッグログなし・広告/解析SDKなし
+- [ ] **次回 Play 提出時**: バックグラウンド計測(フォアグラウンドサービス)を追加したため、
+      Play Console の「アプリのコンテンツ」→ 権限と API の宣言 で
+      フォアグラウンドサービス(location)の利用目的の申告が必要(初回リリース後の追加のため要対応)
 
 ## 2. 署名鍵の作成(初回のみ・ローカルで実施)
 

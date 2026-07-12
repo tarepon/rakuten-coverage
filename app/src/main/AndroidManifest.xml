@@ -10,8 +10,15 @@
     <uses-permission
         android:name="android.permission.READ_PHONE_STATE"
         android:maxSdkVersion="28" />
-    <!-- 将来のバックグラウンド計測用（現時点では未申請） -->
-    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
+    <!--
+        バックグラウンド計測用のフォアグラウンドサービス(位置情報)。
+        ACCESS_BACKGROUND_LOCATION は使わない — FGS(type=location)を自ら起動して
+        ACCESS_FINE_LOCATION の権限のままバックグラウンドでも位置情報取得を継続できるため不要。
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- 計測ステータス通知の表示に必要 (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -33,6 +40,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".measurement.MeasurementService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <receiver
             android:name=".widget.MeasurementWidget"

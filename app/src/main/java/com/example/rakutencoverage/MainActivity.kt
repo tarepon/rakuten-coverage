@@ -47,6 +47,10 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             add(Manifest.permission.READ_PHONE_STATE)
         }
+        // バックグラウンド計測サービスの通知表示に必要（API 33+ のみダイアログが出る）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }.toTypedArray()
 
     private val permissionLauncher = registerForActivityResult(

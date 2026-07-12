@@ -21,8 +21,19 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     fun observeAll(): Flow<List<Measurement>>
 
+    /** 最新1件をリアルタイム監視する Flow (バックグラウンド計測サービスの結果を前面 UI に反映するために使用) */
+    @Query("SELECT * FROM measurements ORDER BY id DESC LIMIT 1")
+    fun observeLatest(): Flow<Measurement?>
+
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     suspend fun getAll(): List<Measurement>
+
+    /**
+     * 通知表示用: timestamp (ISO8601, UTC) が指定日付 (yyyy-MM-dd, UTC) で始まる件数。
+     * @param utcDatePrefix 例: "2026-07-12"
+     */
+    @Query("SELECT COUNT(*) FROM measurements WHERE timestamp LIKE :utcDatePrefix || '%'")
+    suspend fun countByUtcDatePrefix(utcDatePrefix: String): Int
 
     @Query("SELECT COUNT(*) FROM measurements")
     suspend fun count(): Int

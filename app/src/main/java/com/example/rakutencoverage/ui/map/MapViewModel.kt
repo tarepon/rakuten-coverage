@@ -15,7 +15,6 @@ import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.data.Spot
 import com.example.rakutencoverage.data.SpotRepository
 import com.example.rakutencoverage.data.SpotType
-import com.example.rakutencoverage.data.StampRecord
 import com.example.rakutencoverage.data.isCollectable
 import com.example.rakutencoverage.data.latLngToCellId
 import com.example.rakutencoverage.data.monster.Monster
@@ -23,17 +22,14 @@ import com.example.rakutencoverage.data.monster.MonsterGenerator
 import com.example.rakutencoverage.data.PartnerStore
 import com.example.rakutencoverage.data.monster.baseCatchRate
 import kotlin.random.Random
-import com.example.rakutencoverage.measurement.MeasurementSession
+import com.example.rakutencoverage.measurement.MeasurementController
+import com.example.rakutencoverage.measurement.MeasurementService
 import com.example.rakutencoverage.measurement.NetworkInfoCollector
 import com.example.rakutencoverage.ui.character.CharacterState
 import com.example.rakutencoverage.ui.character.idleCharacterState
 import com.example.rakutencoverage.ui.character.toCharacterState
-import android.location.Location
-import kotlin.math.abs
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,9 +51,12 @@ enum class MeasureInterval(val seconds: Int, val label: String) {
 
 /**
  * マップ画面の状態管理 ViewModel。
- * - GPS 計測ループ (measureJob): 選択インターバルごとに GPS + 電波 + RTT を DB 保存
+ * - GPS 計測ループそのものは MeasurementService (フォアグラウンドサービス) が担い、
+ *   VM/Activity が破棄されてもバックグラウンドで計測を継続する。
+ * - 最新計測の購読 (observeLatestMeasurement): measurementDao.observeLatest() の Flow を購読し、
+ *   キャラ表示更新・モンスター発見演出(前面 UI のみ)を行う
  * - 表示更新ループ (displayJob): 3s ごとに電波チェックのみ実行し、キャラ表示を更新
- * - スタンプ付与: チェックイン中かつ有効な計測時のみ stampDao に記録
+ * - スタンプ付与・DB保存・重複排除: MeasurementService 側で完結(measurement/MeasurementService.kt 参照)
  */
 class MapViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -68,7 +67,6 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
         app.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
-    private val session          = MeasurementSession(app)
     private val db               = AppDatabase.getInstance(app)
     private val measurementDao   = db.measurementDao()
     private val stampDao         = db.stampDao()
@@ -148,10 +146,10 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     private val _capturedMonster = MutableStateFlow<Monster?>(null)
     val capturedMonster: StateFlow<Monster?> = _capturedMonster
 
-    private val _autoCapture = MutableStateFlow(false)
-    val autoCapture: StateFlow<Boolean> = _autoCapture
+    /** バックグラウンド計測サービスと共有する状態(Controller)をそのまま公開する */
+    val autoCapture: StateFlow<Boolean> = MeasurementController.autoCapture
 
-    fun setAutoCapture(enabled: Boolean) { _autoCapture.value = enabled }
+    fun setAutoCapture(enabled: Boolean) { MeasurementController.autoCapture.value = enabled }
 
     /**
      * 自分の計測データから作る「面」表示（カバレッジエリア風オーバーレイ）の表示切り替え。
@@ -167,11 +165,19 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     /** このセッション中に逃げられた/見送ったセル(再遭遇させない) */
     private val dismissedCellIds = mutableSetOf<String>()
 
+    /**
+     * observeLatest() の最初の1件を処理済みか。
+     * VM 再生成直後(アプリ再起動・画面回転後の再購読等)に届く「現在の最新計測」は、
+     * バックグラウンド滞在中に既に一度見た(あるいは見送った)可能性があるデータなので、
+     * それをその場で「新規発見」として扱わないための同期専用フラグ。
+     */
+    private var hasSyncedInitialMeasurement = false
+
     private val _character       = MutableStateFlow(idleCharacterState())
     val character: StateFlow<CharacterState> = _character
 
-    private val _isRunning       = MutableStateFlow(false)
-    val isRunning: StateFlow<Boolean> = _isRunning
+    /** 実際の起動/停止は MeasurementService が管理する。VM は購読のみ */
+    val isRunning: StateFlow<Boolean> = MeasurementController.isRunning
 
     private val _lastMeasurement = MutableStateFlow<Measurement?>(null)
     val lastMeasurement: StateFlow<Measurement?> = _lastMeasurement
@@ -179,8 +185,8 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     private val _isFollowing     = MutableStateFlow(false)
     val isFollowing: StateFlow<Boolean> = _isFollowing
 
-    private val _checkIn         = MutableStateFlow<ArenaModeInput?>(null)
-    val checkIn: StateFlow<ArenaModeInput?> = _checkIn
+    /** バックグラウンド計測サービスと共有する状態(Controller)をそのまま公開する */
+    val checkIn: StateFlow<ArenaModeInput?> = MeasurementController.checkIn
 
     private val _selectedInterval = MutableStateFlow(MeasureInterval.FAST)
     val selectedInterval: StateFlow<MeasureInterval> = _selectedInterval
@@ -188,7 +194,6 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     private val _spotsByType     = MutableStateFlow<Map<SpotType, List<Spot>>>(emptyMap())
     val spotsByType: StateFlow<Map<SpotType, List<Spot>>> = _spotsByType
 
-    private var measureJob: Job? = null
     private var displayJob: Job? = null
 
     init {
@@ -196,12 +201,27 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
             _spotsByType.value = SpotType.entries.associateWith { spotRepo.loadSpots(it) }
         }
         startDisplayUpdates()
+        observeLatestMeasurement()
+    }
+
+    /**
+     * MeasurementService が DB に保存した最新の計測結果を購読する。
+     * GPS 計測ループそのもの(収集・重複排除・DB保存・スタンプ判定)はサービス側に移り、
+     * VM はここで結果を受け取ってキャラ表示更新とモンスター発見演出(前面 UI のみ)を行う。
+     * VM の生存期間に関わらずサービスは動き続けるため、計測ループの起動/停止はここでは行わない。
+     */
+    private fun observeLatestMeasurement() {
+        viewModelScope.launch {
+            measurementDao.observeLatest().collect { result ->
+                if (result != null) onNewMeasurement(result)
+            }
+        }
     }
 
     /**
      * GPS を使わずに電波種別だけを 3s ごとチェックし、キャラ表示を更新する。
      * バッテリーへの影響は軽微 (TelephonyManager API のみ)。
-     * GPS 計測ループ (measureJob) とは独立して常時動作する。
+     * バックグラウンド計測ループ (MeasurementService) とは独立して常時動作する。
      */
     private fun startDisplayUpdates() {
         displayJob?.cancel()
@@ -231,89 +251,55 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     fun stopFollowing()  { _isFollowing.value = false }
 
     /** チェックイン情報を更新する。null を渡すとチェックアウト */
-    fun setCheckIn(input: ArenaModeInput?) { _checkIn.value = input }
+    fun setCheckIn(input: ArenaModeInput?) { MeasurementController.checkIn.value = input }
 
     /**
      * 計測インターバルを変更する。
-     * ループは再起動しない — 次の delay() で新しい値を自動的に読む。
+     * サービス側のループは再起動しない — 次の delay() で新しい値を自動的に読む。
      * 再起動すると旧ループの最終計測と新ループの先頭計測が重複するため。
      * @param interval 新しいインターバル設定
      */
     fun setInterval(interval: MeasureInterval) {
         _selectedInterval.value = interval
+        MeasurementController.intervalMs.value = interval.seconds * 1000L
     }
 
     /** 計測中なら停止、停止中なら開始するトグル関数 */
     fun toggleMeasurement() {
-        if (_isRunning.value) stopMeasurement() else startMeasurement()
+        if (MeasurementController.isRunning.value) stopMeasurement() else startMeasurement()
     }
 
     fun startMeasurementIfStopped() {
-        if (!_isRunning.value) startMeasurement()
+        if (!MeasurementController.isRunning.value) startMeasurement()
     }
 
     /**
-     * GPS 計測ループを開始する。
-     * 選択インターバルごとに runSingleMeasurement() を繰り返す。
-     * 既存ループがあればキャンセルしてから再起動する (インターバル変更時も同じ経路)。
+     * バックグラウンド計測サービスの起動を要求する。
+     * 実際に isRunning が true になるのはサービスが startForeground() に成功してから
+     * (MeasurementController.isRunning を購読しているため反映は非同期)。
      */
     private fun startMeasurement() {
-        measureJob?.cancel()
-        _isRunning.value = true
-        measureJob = viewModelScope.launch {
-            while (true) {
-                runSingleMeasurement()
-                delay(_selectedInterval.value.seconds * 1000L)
-            }
-        }
-    }
-
-    /** GPS 計測ループを停止する */
-    fun stopMeasurement() {
-        measureJob?.cancel()
-        measureJob        = null
-        _isRunning.value  = false
+        MeasurementService.start(getApplication())
     }
 
     /**
-     * 1回の計測を実行し、重複でなければ DB に保存して UI ステートを更新する。
-     *
-     * 処理フロー:
-     * 1. MeasurementSession.collect() で GPS + 電波 + RTT を収集 (DB 保存なし)
-     * 2. 直前の計測と比較: 同じ場所 (15m 以内) + 同じ networkType + 同じ RSSI → スキップ
-     * 3. 重複でなければ ensureActive() で停止チェック後、DB に保存
-     * 4. キャラ状態更新・スタンプ付与
+     * バックグラウンド計測サービスの停止を要求する。
+     * onCleared() からは呼ばない — FGS 化の目的である「VM/Activity が破棄されても計測を続ける」を
+     * 満たすため、明示的な停止操作(トグルボタン等)からのみ呼ばれる。
      */
-    private suspend fun runSingleMeasurement() {
-        val ci     = _checkIn.value
-        val result = session.collect(
-            arenaId   = ci?.spot?.id,
-            arenaName = ci?.spot?.name,
-            seatLabel = ci?.seatLabel,
-            gamePhase = ci?.gamePhase?.name
-        ) ?: return
+    fun stopMeasurement() {
+        MeasurementService.stop(getApplication())
+    }
 
-        val last = _lastMeasurement.value
-        if (last != null && isDuplicate(result, last)) return
-
-        currentCoroutineContext().ensureActive()
-        measurementDao.insert(result)
+    /**
+     * MeasurementService が保存した最新計測の到着ごとに呼ばれる。
+     * DB への計測保存・重複排除・スタンプ判定は MeasurementService 側で完結しているため、
+     * ここではキャラ表示の更新とモンスター発見判定(前面 UI のみの演出)のみを行う。
+     */
+    private fun onNewMeasurement(result: Measurement) {
         _lastMeasurement.value = result
-
         if (result.signalLevel != _character.value.level) {
             _character.value = result.signalLevel.toCharacterState()
-        }
-        val isValidForStamp = result.signalLevel != SignalLevel.AIRPLANE_MODE &&
-                              result.signalLevel != SignalLevel.NO_SIM
-        if (isValidForStamp) ci?.spot?.let { spot ->
-            stampDao.achieve(
-                StampRecord(
-                    spotId     = spot.id,
-                    spotType   = spot.type.name,
-                    spotName   = spot.name,
-                    achievedAt = Instant.now().toString()
-                )
-            )
         }
 
         // 基地局IDを優先。NO_SIGNALは基地局がないのでGPSグリッド（222m）で代替
@@ -322,22 +308,33 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
             result.signalLevel == SignalLevel.NO_SIGNAL    -> latLngToCellId(result.latitude, result.longitude, result.signalLevel)
             else                                           -> return
         }
-        if (cellId != currentCellId) {
+
+        if (!hasSyncedInitialMeasurement) {
+            // VM再生成直後に届く「現在の最新計測」は、バックグラウンド滞在中に既に見た/見送った
+            // 可能性があるため、ここでは currentCellId の同期のみ行い発見演出はしない
+            hasSyncedInitialMeasurement = true
             currentCellId = cellId
-            // ミニゲーム進行中は新しい遭遇で上書きしない(denpamon-go 踏襲)
-            if (_capture.value != null) return
-            if (result.signalLevel.isCollectable &&
-                cellId !in capturedCellIds.value &&
-                cellId !in dismissedCellIds
-            ) {
-                val monster = MonsterGenerator.generate(cellId, 1, result.signalLevel)
-                if (_autoCapture.value) {
-                    autoCapture(monster, result)
-                } else {
-                    _capturedMonster.value = null
-                    _capture.value = CaptureUi(monster)
-                    vibrateShort()
-                }
+            return
+        }
+
+        if (cellId == currentCellId) return
+        currentCellId = cellId
+
+        // ミニゲーム進行中は新しい遭遇で上書きしない(denpamon-go 踏襲)
+        if (_capture.value != null) return
+
+        if (result.signalLevel.isCollectable &&
+            cellId !in capturedCellIds.value &&
+            cellId !in dismissedCellIds
+        ) {
+            val monster = MonsterGenerator.generate(cellId, 1, result.signalLevel)
+            if (MeasurementController.autoCapture.value) {
+                // コレクションDBへの登録は MeasurementService が既に行っている。ここではカード表示のみ
+                showAutoCaptureCard(monster)
+            } else {
+                _capturedMonster.value = null
+                _capture.value = CaptureUi(monster)
+                vibrateShort()
             }
         }
     }
@@ -361,20 +358,13 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     /** 捕獲結果カードをタップで即閉じる */
     fun dismissCapturedMonster() { _capturedMonster.value = null }
 
-    /** 自動捕獲モード：発見通知を省略し即座にDB保存・4秒後に通知消去 */
-    private fun autoCapture(monster: Monster, loc: Measurement) {
+    /**
+     * 自動捕獲モード：発見通知を省略しカードを4秒後に自動的に消す。
+     * コレクションDBへの登録・パートナー設定は MeasurementService が(裏で)既に行っているため、
+     * ここでは行わない(二重登録防止)。
+     */
+    private fun showAutoCaptureCard(monster: Monster) {
         viewModelScope.launch {
-            collectionDao.upsert(
-                CollectionRecord(
-                    h3Index     = monster.cellId,
-                    signalLevel = monster.signalLevel.name,
-                    latitude    = loc.latitude,
-                    longitude   = loc.longitude,
-                    capturedAt  = Instant.now().toString(),
-                    level       = monster.level
-                )
-            )
-            ensurePartner(monster.cellId)
             _capturedMonster.value = monster
             delay(4000L)
             if (_capturedMonster.value == monster) _capturedMonster.value = null
@@ -460,29 +450,9 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * 2つの計測が「実質同じ」かを判定する。
-     * 同じ場所 (10m 以内) + 同じ networkType + RSSI が ±5 dBm 以内 → 重複とみなす。
-     * RSSI は常時数 dBm 揺れるため完全一致ではなく許容幅を持たせる。
-     * @return true なら重複 → 保存スキップ
-     */
-    private fun isDuplicate(a: Measurement, b: Measurement): Boolean {
-        if (a.networkType != b.networkType) return false
-        val rssiDiff = when {
-            a.rssi == null && b.rssi == null -> 0
-            a.rssi == null || b.rssi == null -> Int.MAX_VALUE
-            else                             -> abs(a.rssi - b.rssi)
-        }
-        if (rssiDiff > 5) return false
-        val results = FloatArray(1)
-        Location.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude, results)
-        return results[0] < 10f
-    }
-
     override fun onCleared() {
         super.onCleared()
-        stopMeasurement()
+        // MeasurementService は停止しない — VM/Activity が破棄されてもバックグラウンド計測を継続するため
         displayJob?.cancel()
-        session.release()
     }
 }

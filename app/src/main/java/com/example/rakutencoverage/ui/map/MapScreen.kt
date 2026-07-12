@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -94,7 +93,6 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
     OsmConfiguration.getInstance().userAgentValue = context.packageName
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val fusedLocation = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val view = LocalView.current
 
     // ────────────────────────────────────────
     // 囲って保存(ラッソエクスポート)の状態
@@ -164,12 +162,6 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
         "✂️ 指で囲むと範囲内の計測をエクスポートできます"
     } else {
         lassoMessage
-    }
-
-    // 計測中は画面OFF無効
-    DisposableEffect(isRunning) {
-        view.keepScreenOn = isRunning
-        onDispose { view.keepScreenOn = false }
     }
 
     // 起動時に最終既知位置へ移動（GPSキャッシュから即取得）
