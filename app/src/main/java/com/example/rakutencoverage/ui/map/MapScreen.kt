@@ -510,8 +510,8 @@ private fun LandscapeMapLayout(
                 else { mapViewRef.value?.controller?.setZoom(15.0); vm.startFollowing() }
             },
             modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 12.dp),
+                .align(Alignment.BottomEnd)
+                .padding(end = 12.dp, bottom = 8.dp),
             vertical = true
         )
 
@@ -641,7 +641,6 @@ private fun BottomHud(
     vertical: Boolean = false
 ) {
     var showSettingsSheet by remember { mutableStateOf(false) }
-    val showLabel = !vertical
 
     val buttons: @Composable () -> Unit = {
         CircleIconButton(
@@ -650,7 +649,7 @@ private fun BottomHud(
             size = 52.dp,
             active = checkIn != null || autoCapture,
             onClick = { showSettingsSheet = true },
-            showLabel = showLabel
+            labelAtStart = vertical
         )
 
         CircleIconButton(
@@ -659,13 +658,13 @@ private fun BottomHud(
             size = 52.dp,
             active = lassoEnabled,
             onClick = onLassoToggle,
-            showLabel = showLabel
+            labelAtStart = vertical
         )
 
         MainMeasureButton(
             isRunning = isRunning,
             onClick = { vm.toggleMeasurement() },
-            showLabel = showLabel,
+            labelAtStart = vertical,
             boxSize = if (vertical) 80.dp else 88.dp
         )
 
@@ -675,14 +674,15 @@ private fun BottomHud(
             size = 52.dp,
             active = isFollowing,
             onClick = onFollowClick,
-            showLabel = showLabel
+            labelAtStart = vertical
         )
     }
 
     if (vertical) {
+        // 縦一列時はボタンを右端に揃え、ラベルは各ボタンの左横に出す
         Column(
             modifier = modifier,
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) { buttons() }
     } else {
@@ -706,13 +706,13 @@ private fun BottomHud(
 
 /**
  * 中央下の大きな円形メインボタン。マッピング実行中は外周にパルスするリングを表示する。
- * showLabel=false でラベル非表示、boxSize で外箱サイズを調整可能（円自体は常に72dp）。
+ * labelAtStart=true でラベルを左横に(横画面の縦一列HUD用)、boxSize で外箱サイズを調整可能（円自体は常に72dp）。
  */
 @Composable
 private fun MainMeasureButton(
     isRunning: Boolean,
     onClick: () -> Unit,
-    showLabel: Boolean = true,
+    labelAtStart: Boolean = false,
     boxSize: Dp = 88.dp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -735,7 +735,7 @@ private fun MainMeasureButton(
         label = "pulseAlpha"
     )
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val circle: @Composable () -> Unit = {
         Box(modifier = Modifier.size(boxSize), contentAlignment = Alignment.Center) {
             if (isRunning) {
                 Box(
@@ -758,11 +758,27 @@ private fun MainMeasureButton(
                 Text(if (isRunning) "⏹" else "▶", fontSize = 28.sp, color = androidx.compose.ui.graphics.Color.White)
             }
         }
-        if (showLabel) HudLabel(if (isRunning) "計測停止" else "計測開始")
+    }
+    val label = if (isRunning) "計測停止" else "計測開始"
+
+    if (labelAtStart) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            HudLabel(label)
+            circle()
+        }
+    } else {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            circle()
+            HudLabel(label)
+        }
     }
 }
 
-/** 汎用の円形アイコンボタン。active=true でハイライト表示。showLabel=true の場合のみラベルを下に添える。 */
+/**
+ * 汎用の円形アイコンボタン。active=true でハイライト表示。
+ * labelAtStart=false: ラベルをボタンの下に(縦画面の横一列HUD用)
+ * labelAtStart=true : ラベルをボタンの左横に(横画面の縦一列HUD用。列の高さを増やさない)
+ */
 @Composable
 private fun CircleIconButton(
     emoji: String,
@@ -770,9 +786,9 @@ private fun CircleIconButton(
     size: androidx.compose.ui.unit.Dp,
     active: Boolean,
     onClick: () -> Unit,
-    showLabel: Boolean = true
+    labelAtStart: Boolean = false
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val circle: @Composable () -> Unit = {
         Box(
             modifier = Modifier
                 .size(size)
@@ -783,7 +799,18 @@ private fun CircleIconButton(
         ) {
             Text(emoji, fontSize = 20.sp)
         }
-        if (showLabel) HudLabel(label)
+    }
+
+    if (labelAtStart) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            HudLabel(label)
+            circle()
+        }
+    } else {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            circle()
+            HudLabel(label)
+        }
     }
 }
 
