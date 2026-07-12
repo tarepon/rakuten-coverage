@@ -1,16 +1,21 @@
 package com.example.rakutencoverage.ui.map
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Point
+import android.os.Build
+import android.provider.Settings
 import kotlin.math.pow
 import kotlin.math.hypot
 import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -93,6 +98,50 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
     OsmConfiguration.getInstance().userAgentValue = context.packageName
     val mapViewRef = remember { mutableStateOf<MapView?>(null) }
     val fusedLocation = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    // ────────────────────────────────────────
+    // バックグラウンド計測の通知許可(時計横のステータスアイコン表示に必須)。
+    // API33+はランタイム許可が必要で、起動時1回のリクエストだけだと拒否・見逃しで
+    // 二度と聞かれず「アイコンが出ない」状態になりうるため、計測開始のたびに再チェックする。
+    // ────────────────────────────────────────
+    var showNotificationRationale by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (!granted) showNotificationRationale = true }
+
+    LaunchedEffect(isRunning) {
+        if (isRunning && !NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                // API33未満はランタイム許可の概念がなく、設定アプリでの手動許可のみが道
+                showNotificationRationale = true
+            }
+        }
+    }
+
+    if (showNotificationRationale) {
+        AlertDialog(
+            onDismissRequest = { showNotificationRationale = false },
+            icon = { Text("🔕", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("通知が許可されていません") },
+            text = {
+                Text("計測中は時計横にアイコンで電波状況を表示しますが、通知が無効だと表示されません。設定から通知を許可してください。")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showNotificationRationale = false
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    )
+                }) { Text("設定を開く") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotificationRationale = false }) { Text("後で") }
+            }
+        )
+    }
 
     // ────────────────────────────────────────
     // 囲って保存(ラッソエクスポート)の状態
