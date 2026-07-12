@@ -484,17 +484,17 @@ private fun LandscapeMapLayout(
             }
         }
 
-        // 最新計測ステータス（下部中央、メインボタンの上）
+        // 最新計測ステータス（下部中央。HUDが右端に移動したため中央下に配置）
         last?.let {
             StatusPill(
                 m = it,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 120.dp)
+                    .padding(bottom = 12.dp)
             )
         }
 
-        // 下部HUD（中央）
+        // 右端HUD（縦一列・カメラアプリ式。ラベル非表示）
         BottomHud(
             vm = vm,
             isRunning = isRunning,
@@ -510,8 +510,9 @@ private fun LandscapeMapLayout(
                 else { mapViewRef.value?.controller?.setZoom(15.0); vm.startFollowing() }
             },
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+                .align(Alignment.CenterEnd)
+                .padding(end = 12.dp),
+            vertical = true
         )
 
         // 捕獲ミニゲーム(全画面オーバーレイ、最前面)
@@ -621,6 +622,8 @@ private fun LassoStatusBanner(
  * 右に現在位置ボタン、左に「⋯」その他設定ボタン（間隔・自動捕獲・エリア表示をシートに集約。
  * チェックインはボトムナビ/バナーに移設したためシートには含まない）、
  * その隣に「✂️」囲って保存トグルボタン。
+ * vertical=true の場合は横一列(Row)ではなく縦一列(Column)で並べ、ラベルを非表示にする
+ * （横画面・右端縦一列レイアウト用。縦画面では常に vertical=false）。
  */
 @Composable
 private fun BottomHud(
@@ -634,21 +637,20 @@ private fun BottomHud(
     lassoEnabled: Boolean,
     onLassoToggle: () -> Unit,
     onFollowClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    vertical: Boolean = false
 ) {
     var showSettingsSheet by remember { mutableStateOf(false) }
+    val showLabel = !vertical
 
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
+    val buttons: @Composable () -> Unit = {
         CircleIconButton(
             emoji = "⋯",
             label = "設定",
             size = 52.dp,
             active = checkIn != null || autoCapture,
-            onClick = { showSettingsSheet = true }
+            onClick = { showSettingsSheet = true },
+            showLabel = showLabel
         )
 
         CircleIconButton(
@@ -656,12 +658,15 @@ private fun BottomHud(
             label = "囲んで保存",
             size = 52.dp,
             active = lassoEnabled,
-            onClick = onLassoToggle
+            onClick = onLassoToggle,
+            showLabel = showLabel
         )
 
         MainMeasureButton(
             isRunning = isRunning,
-            onClick = { vm.toggleMeasurement() }
+            onClick = { vm.toggleMeasurement() },
+            showLabel = showLabel,
+            boxSize = if (vertical) 80.dp else 88.dp
         )
 
         CircleIconButton(
@@ -669,8 +674,23 @@ private fun BottomHud(
             label = "現在地",
             size = 52.dp,
             active = isFollowing,
-            onClick = onFollowClick
+            onClick = onFollowClick,
+            showLabel = showLabel
         )
+    }
+
+    if (vertical) {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) { buttons() }
+    } else {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) { buttons() }
     }
 
     if (showSettingsSheet) {
@@ -684,9 +704,17 @@ private fun BottomHud(
     }
 }
 
-/** 中央下の大きな円形メインボタン。マッピング実行中は外周にパルスするリングを表示する。 */
+/**
+ * 中央下の大きな円形メインボタン。マッピング実行中は外周にパルスするリングを表示する。
+ * showLabel=false でラベル非表示、boxSize で外箱サイズを調整可能（円自体は常に72dp）。
+ */
 @Composable
-private fun MainMeasureButton(isRunning: Boolean, onClick: () -> Unit) {
+private fun MainMeasureButton(
+    isRunning: Boolean,
+    onClick: () -> Unit,
+    showLabel: Boolean = true,
+    boxSize: Dp = 88.dp
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -708,7 +736,7 @@ private fun MainMeasureButton(isRunning: Boolean, onClick: () -> Unit) {
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Box(modifier = Modifier.size(88.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(boxSize), contentAlignment = Alignment.Center) {
             if (isRunning) {
                 Box(
                     modifier = Modifier
@@ -730,18 +758,19 @@ private fun MainMeasureButton(isRunning: Boolean, onClick: () -> Unit) {
                 Text(if (isRunning) "⏹" else "▶", fontSize = 28.sp, color = androidx.compose.ui.graphics.Color.White)
             }
         }
-        HudLabel(if (isRunning) "計測停止" else "計測開始")
+        if (showLabel) HudLabel(if (isRunning) "計測停止" else "計測開始")
     }
 }
 
-/** 汎用の円形アイコンボタン。active=true でハイライト表示。ラベルを下に添える。 */
+/** 汎用の円形アイコンボタン。active=true でハイライト表示。showLabel=true の場合のみラベルを下に添える。 */
 @Composable
 private fun CircleIconButton(
     emoji: String,
     label: String,
     size: androidx.compose.ui.unit.Dp,
     active: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showLabel: Boolean = true
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(
@@ -754,7 +783,7 @@ private fun CircleIconButton(
         ) {
             Text(emoji, fontSize = 20.sp)
         }
-        HudLabel(label)
+        if (showLabel) HudLabel(label)
     }
 }
 

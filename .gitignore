@@ -25,3 +25,6 @@ app/release/
 
 # Kotlinビルド生成物(エラーログ等)
 .kotlin/
+
+# 実機スクリーンショット(検証用・コミット禁止)
+Screenshot_*.png
