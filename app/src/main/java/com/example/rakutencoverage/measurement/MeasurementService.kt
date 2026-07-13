@@ -205,7 +205,7 @@ class MeasurementService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(iconRes)
             .setContentTitle(formatNotificationTitle(todayCount))
             .setContentText(formatNotificationText(latest))
@@ -214,7 +214,14 @@ class MeasurementService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(contentIntent)
             .addAction(0, "計測停止", stopIntent)
-            .build()
+
+        // Android 12+ はFGS通知の初回表示を最大10秒遅延・短命サービスとして抑制することがある。
+        // 計測は長時間継続するサービスのため、即時表示を明示して抑制を回避する。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+        }
+
+        return builder.build()
     }
 
     private fun createChannelIfNeeded() {
