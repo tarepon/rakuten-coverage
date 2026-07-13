@@ -211,7 +211,7 @@ class MeasurementService : Service() {
             .setContentText(formatNotificationText(latest))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(contentIntent)
             .addAction(0, "計測停止", stopIntent)
 
@@ -226,9 +226,17 @@ class MeasurementService : Service() {
 
     private fun createChannelIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(CHANNEL_ID, "計測ステータス", NotificationManager.IMPORTANCE_LOW).apply {
+        // 旧チャンネル(IMPORTANCE_LOW)は「サイレント」区分に分類され、実機検証で
+        // ステータスバーのアイコンが表示されないことが判明した(通知シェードには出るが
+        // 時計横のアイコンだけ省略される、Android新UIの仕様)。
+        // NotificationChannelは作成後に重要度を変更できないため、既存インストール分にも
+        // 反映されるよう新IDへ切り替える。旧チャンネルは掃除のため削除しておく。
+        notificationManager.deleteNotificationChannel(LEGACY_CHANNEL_ID)
+        val channel = NotificationChannel(CHANNEL_ID, "計測ステータス", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "電波計測の実行中ステータスを表示します"
             setShowBadge(false)
+            setSound(null, null)
+            enableVibration(false)
         }
         notificationManager.createNotificationChannel(channel)
     }
@@ -262,7 +270,9 @@ class MeasurementService : Service() {
         const val ACTION_STOP  = "com.example.rakutencoverage.measurement.action.STOP"
 
         private const val NOTIF_ID   = 1001
-        private const val CHANNEL_ID = "measurement_status"
+        // IMPORTANCE_LOWで作成していた旧チャンネル。掃除のためcreateChannelIfNeeded()で削除する
+        private const val LEGACY_CHANNEL_ID = "measurement_status"
+        private const val CHANNEL_ID = "measurement_status_v2"
 
         fun start(context: Context) {
             val intent = Intent(context, MeasurementService::class.java).setAction(ACTION_START)
