@@ -240,6 +240,7 @@ git commit -m "feat: MonsterCategory enumとSignalLevel.category拡張を追加"
 
 **Files:**
 - Modify: `app/src/main/java/com/example/rakutencoverage/data/Measurement.kt:46-77`
+- Modify: `app/src/main/java/com/example/rakutencoverage/data/monster/MonsterCategory.kt`（Task 1実装時にKotlinの網羅性チェックを満たすため暫定で追加された `SignalLevel.MILLIMETER_WAVE -> MonsterCategory.LEGEND` 分岐を、この Task で `SignalLevel` から `MILLIMETER_WAVE` を消すのに合わせて削除する）
 - Test: `app/src/test/java/com/example/rakutencoverage/data/MeasurementTest.kt`
 
 **Interfaces:**
@@ -368,9 +369,19 @@ enum class SignalLevel {
 }
 ```
 
+- [ ] **Step 3.5: MonsterCategory.kt の暫定分岐を削除する**
+
+Task 1実装時、`SignalLevel`にまだ`MILLIMETER_WAVE`が残っていたため、Kotlinの網羅性チェックを満たす目的で
+`SignalLevel.category`に`SignalLevel.MILLIMETER_WAVE -> MonsterCategory.LEGEND`という暫定分岐が追加されている。
+`MILLIMETER_WAVE`をenumから削除するとこの行はコンパイルエラーになるため、削除する。
+
+`app/src/main/java/com/example/rakutencoverage/data/monster/MonsterCategory.kt` を開き、
+`val SignalLevel.category: MonsterCategory?` の中にある `SignalLevel.MILLIMETER_WAVE -> MonsterCategory.LEGEND` の行を削除する
+（Step 3の変更後、`SignalLevel`はもう`MILLIMETER_WAVE`を持たないため、この行を残すとコンパイルエラーになる）。
+
 - [ ] **Step 4: テストが通ることを確認**
 
-Run: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew testDebugUnitTest --tests "com.example.rakutencoverage.data.MeasurementTest"`
+Run: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew testDebugUnitTest --tests "com.example.rakutencoverage.data.MeasurementTest" --tests "com.example.rakutencoverage.data.monster.MonsterCategoryTest"`
 Expected: PASS（11 tests）。この時点では他ファイルが `MILLIMETER_WAVE` を参照しているためプロジェクト全体のコンパイルは失敗する（Task 3-5で解消）。
 
 - [ ] **Step 5: コミット**
