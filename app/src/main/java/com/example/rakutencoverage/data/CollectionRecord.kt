@@ -23,13 +23,12 @@ data class CollectionRecord(
 
 /** SignalLevel のレア度順序（小さいほど強い・レア）。AIRPLANE_MODE/NO_SIMはコレクション対象外 */
 val SignalLevel.rarityRank: Int get() = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 0
-    SignalLevel.PLATINUM_5G     -> 1
-    SignalLevel.FIVE_G          -> 2
-    SignalLevel.PLATINUM        -> 3
-    SignalLevel.LTE             -> 4
-    SignalLevel.WEAK            -> 5
-    SignalLevel.NO_SIGNAL       -> 6
+    SignalLevel.PLATINUM_5G     -> 0
+    SignalLevel.FIVE_G          -> 1
+    SignalLevel.PLATINUM        -> 2
+    SignalLevel.LTE             -> 3
+    SignalLevel.WEAK            -> 4
+    SignalLevel.NO_SIGNAL       -> 5
     SignalLevel.AIRPLANE_MODE   -> 99
     SignalLevel.NO_SIM          -> 99
 }

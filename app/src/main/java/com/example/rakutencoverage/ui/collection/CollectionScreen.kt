@@ -334,7 +334,6 @@ private fun QuestCard(quest: QuestEntry) {
 }
 
 private fun SignalLevel.displayName(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "5Gミリ波モンスター"
     SignalLevel.PLATINUM_5G     -> "プラチナ5Gモンスター"
     SignalLevel.FIVE_G          -> "5G Sub6モンスター"
     SignalLevel.PLATINUM        -> "プラチナモンスター"
@@ -343,10 +342,10 @@ private fun SignalLevel.displayName(): String = when (this) {
     SignalLevel.NO_SIGNAL       -> "圏外の亡霊"
     SignalLevel.AIRPLANE_MODE   -> "機内モードの幽霊"
     SignalLevel.NO_SIM          -> "SIMなしの亡者"
+    else                        -> "モンスター"
 }
 
 private fun SignalLevel.rarity(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "★★★★★ 伝説"
     SignalLevel.PLATINUM_5G     -> "★★★★☆ レア"
     SignalLevel.FIVE_G          -> "★★★☆☆ アンコモン"
     SignalLevel.PLATINUM        -> "★★★☆☆ アンコモン"
@@ -357,7 +356,6 @@ private fun SignalLevel.rarity(): String = when (this) {
 }
 
 private fun SignalLevel.starCount(): Int = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 5
     SignalLevel.PLATINUM_5G     -> 4
     SignalLevel.FIVE_G          -> 3
     SignalLevel.PLATINUM        -> 3
@@ -368,7 +366,6 @@ private fun SignalLevel.starCount(): Int = when (this) {
 }
 
 private fun SignalLevel.toEmoji(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "👑"
     SignalLevel.PLATINUM_5G     -> "🤩"
     SignalLevel.FIVE_G          -> "😆"
     SignalLevel.PLATINUM        -> "😊"
@@ -379,7 +376,6 @@ private fun SignalLevel.toEmoji(): String = when (this) {
 }
 
 private fun SignalLevel.toArgb(): Long = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 0xFFFF6F00L
     SignalLevel.PLATINUM_5G     -> 0xFFFFD700L
     SignalLevel.FIVE_G          -> 0xFF1E88E5L
     SignalLevel.PLATINUM        -> 0xFFAB47BCL
