@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.data.monster.Monster
+import com.example.rakutencoverage.data.monster.category
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -333,54 +334,17 @@ private fun QuestCard(quest: QuestEntry) {
     }
 }
 
-private fun SignalLevel.displayName(): String = when (this) {
-    SignalLevel.PLATINUM_5G     -> "プラチナ5Gモンスター"
-    SignalLevel.FIVE_G          -> "5G Sub6モンスター"
-    SignalLevel.PLATINUM        -> "プラチナモンスター"
-    SignalLevel.LTE             -> "LTEモンスター"
-    SignalLevel.WEAK            -> "おとぎの国の鬼"
-    SignalLevel.NO_SIGNAL       -> "圏外の亡霊"
-    SignalLevel.AIRPLANE_MODE   -> "機内モードの幽霊"
-    SignalLevel.NO_SIM          -> "SIMなしの亡者"
-    else                        -> "モンスター"
-}
+private fun SignalLevel.displayName(): String =
+    category?.displayName ?: when (this) {
+        SignalLevel.AIRPLANE_MODE -> "機内モードの幽霊"
+        SignalLevel.NO_SIM        -> "SIMなしの亡者"
+        else                      -> "" // category は AIRPLANE_MODE/NO_SIM 以外は非null
+    }
 
-private fun SignalLevel.rarity(): String = when (this) {
-    SignalLevel.PLATINUM_5G     -> "★★★★☆ レア"
-    SignalLevel.FIVE_G          -> "★★★☆☆ アンコモン"
-    SignalLevel.PLATINUM        -> "★★★☆☆ アンコモン"
-    SignalLevel.LTE             -> "★☆☆☆☆ コモン"
-    SignalLevel.WEAK            -> "★★☆☆☆ ローミング中"
-    SignalLevel.NO_SIGNAL       -> "★★★☆☆ 闇レア"
-    else                        -> ""
-}
+private fun SignalLevel.rarity(): String = category?.rarityLabel ?: ""
 
-private fun SignalLevel.starCount(): Int = when (this) {
-    SignalLevel.PLATINUM_5G     -> 4
-    SignalLevel.FIVE_G          -> 3
-    SignalLevel.PLATINUM        -> 3
-    SignalLevel.LTE             -> 1
-    SignalLevel.WEAK            -> 2
-    SignalLevel.NO_SIGNAL       -> 3
-    else                        -> 1
-}
+private fun SignalLevel.starCount(): Int = category?.starCount ?: 1
 
-private fun SignalLevel.toEmoji(): String = when (this) {
-    SignalLevel.PLATINUM_5G     -> "🤩"
-    SignalLevel.FIVE_G          -> "😆"
-    SignalLevel.PLATINUM        -> "😊"
-    SignalLevel.LTE             -> "🙂"
-    SignalLevel.WEAK            -> "👹"
-    SignalLevel.NO_SIGNAL       -> "💀"
-    else                        -> "？"
-}
+private fun SignalLevel.toEmoji(): String = category?.emoji ?: "？"
 
-private fun SignalLevel.toArgb(): Long = when (this) {
-    SignalLevel.PLATINUM_5G     -> 0xFFFFD700L
-    SignalLevel.FIVE_G          -> 0xFF1E88E5L
-    SignalLevel.PLATINUM        -> 0xFFAB47BCL
-    SignalLevel.LTE             -> 0xFF43A047L
-    SignalLevel.WEAK            -> 0xFF5D4037L
-    SignalLevel.NO_SIGNAL       -> 0xFF212121L
-    else                        -> 0xFF9E9E9EL
-}
+private fun SignalLevel.toArgb(): Long = category?.argbColor ?: 0xFF9E9E9EL
