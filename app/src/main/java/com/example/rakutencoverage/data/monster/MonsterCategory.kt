@@ -19,8 +19,8 @@ enum class MonsterCategory(
 ) {
     LEGEND(
         displayName = "伝説のプラチナモンスター",
-        rarityLabel = "★★★★★ 伝説",
-        starCount = 5,
+        rarityLabel = "★★★★☆ 伝説",
+        starCount = 4,
         emoji = "👑",
         argbColor = 0xFFAB47BCL,
         hpRange = 70..100,
@@ -29,8 +29,8 @@ enum class MonsterCategory(
     ),
     PHANTOM(
         displayName = "幻のプラチナ5Gモンスター",
-        rarityLabel = "★★★★☆ 幻",
-        starCount = 4,
+        rarityLabel = "★★★★★ 幻",
+        starCount = 5,
         emoji = "🤩",
         argbColor = 0xFFFFD700L,
         hpRange = 30..60,

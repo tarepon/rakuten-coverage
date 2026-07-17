@@ -1,6 +1,7 @@
 package com.example.rakutencoverage.data.monster
 
 import com.example.rakutencoverage.data.SignalLevel
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -79,5 +80,15 @@ class MonsterGeneratorTest {
         val a = MonsterGenerator.generate("fixed-cell", 1, SignalLevel.PLATINUM)
         val b = MonsterGenerator.generate("fixed-cell", 1, SignalLevel.PLATINUM)
         assertTrue(a.hp == b.hp && a.attack == b.attack && a.defense == b.defense && a.moves == b.moves)
+    }
+
+    // name/emojiはcellIdのハッシュのみから決まる(signalLevelのロール順には影響されない)。
+    // SeededRandomの乱数消費順が変わると値がズレてこのテストが落ちるため、
+    // リグレッション検知用にゴールデン値を固定しておく。
+    @Test
+    fun nameAndEmojiAreStableForFixedCellId() {
+        val monster = MonsterGenerator.generate("fixed-cell", 1, SignalLevel.PLATINUM)
+        assertEquals("スループン", monster.name)
+        assertEquals("🦈", monster.emoji)
     }
 }

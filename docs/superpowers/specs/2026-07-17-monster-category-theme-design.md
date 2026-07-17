@@ -35,18 +35,21 @@ enum名自体は変更せず、テーマ付けのみで対応する。
 - `SignalLevel` enumから `MILLIMETER_WAVE` を削除
 - `resolveSignalLevel()` の `band == "n257"` 分岐を削除
 - Room の `signalLevel` カラムは `SignalLevel.name` の文字列保存。万一過去に `"MILLIMETER_WAVE"` 文字列が
-  保存されているレコードがあった場合に備え、デシリアライズ側（`CollectionRecord` → `SignalLevel` 変換箇所）に
-  未知文字列は `FIVE_G` にフォールバックする処理を1箇所追加する
+  保存されているレコードがあった場合の扱いは、`CollectionViewModel.kt` / `MapScreen.kt` の2箇所に既にある
+  `runCatching { SignalLevel.valueOf(record.signalLevel) }.getOrNull()` のパターンでそのまま安全に吸収される
+  （未知文字列は`null`になり`mapNotNull`で除外＝そのレコードは静かに読み飛ばされる）。追加のフォールバック処理は
+  実装しない。ミリ波は対応端末が存在しない実質捕獲不可能な区分で、過去レコードが存在する現実的な可能性が
+  ほぼゼロのため、`FIVE_G` 等への再テーマ付けは行わずドロップのままにするのが意図した判断
 - `BattleLogic.kt` の `battleType()` / `baseCatchRate()`、`CollectionRecord.kt` の `rarityRank`、
   `CollectionScreen.kt` の表示ラベル・星数・絵文字・色から `MILLIMETER_WAVE` の分岐を削除
 
 ## 変更② signalLevelへのテーマ付与
 
-`SignalLevel` の拡張プロパティとして `theme: MonsterTheme` を追加する（1:1対応なので enum 本体は変更せず拡張関数で導出）。
+`SignalLevel` の拡張プロパティとして `category: MonsterCategory` を追加する（1:1対応なので enum 本体は変更せず拡張関数で導出）。
 
-新規 `MonsterTheme` enum:
+新規 `MonsterCategory` enum:
 
-| enum値 | テーマ名 | 対応するsignalLevel | 実体 |
+| enum値 | カテゴリ名 | 対応するsignalLevel | 実体 |
 |---|---|---|---|
 | `LEGEND` | 伝説 | `PLATINUM` | LTE Band28（プラチナバンド） |
 | `PHANTOM` | 幻 | `PLATINUM_5G` | 5G n28 |
@@ -102,7 +105,7 @@ enum名自体は変更せず、テーマ付けのみで対応する。
 ## 変更対象ファイル一覧
 
 - `data/Measurement.kt` — `SignalLevel` enumから`MILLIMETER_WAVE`削除、`resolveSignalLevel()`のn257分岐削除
-- 新規 `data/monster/MonsterTheme.kt` — `MonsterTheme` enum、`SignalLevel.theme` 拡張プロパティ
+- 新規 `data/monster/MonsterCategory.kt` — `MonsterCategory` enum、`SignalLevel.category` 拡張プロパティ
 - `data/monster/MonsterGenerator.kt` — テーマ別パラメータレンジ・テーマ別技プール抽選ロジック
 - `data/monster/MonsterAssets.kt` — `moves` を単一リストからテーマ別マップに再構成
 - `data/monster/BattleLogic.kt` — `battleType()` / `baseCatchRate()` から `MILLIMETER_WAVE` 分岐削除
