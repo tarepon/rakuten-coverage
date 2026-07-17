@@ -86,7 +86,6 @@ class MeasurementWidget : AppWidgetProvider() {
 
     companion object {
         private fun SignalLevel.toEmoji() = when (this) {
-            SignalLevel.MILLIMETER_WAVE -> "👑"
             SignalLevel.PLATINUM_5G     -> "🏆"
             SignalLevel.FIVE_G          -> "⚡"
             SignalLevel.PLATINUM        -> "💎"
@@ -98,7 +97,6 @@ class MeasurementWidget : AppWidgetProvider() {
         }
 
         private fun SignalLevel.shortLabel() = when (this) {
-            SignalLevel.MILLIMETER_WAVE -> "ミリ波5G"
             SignalLevel.PLATINUM_5G     -> "プラチナ5G"
             SignalLevel.FIVE_G          -> "5G"
             SignalLevel.PLATINUM        -> "プラチナBand28"

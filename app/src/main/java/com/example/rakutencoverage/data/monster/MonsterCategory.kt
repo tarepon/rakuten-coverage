@@ -81,7 +81,6 @@ enum class MonsterCategory(
 
 /** AIRPLANE_MODE/NO_SIMはコレクション対象外のためnull */
 val SignalLevel.category: MonsterCategory? get() = when (this) {
-    SignalLevel.MILLIMETER_WAVE                      -> MonsterCategory.LEGEND  // TODO(Task 2): Remove when MILLIMETER_WAVE is deleted from SignalLevel
     SignalLevel.PLATINUM                            -> MonsterCategory.LEGEND
     SignalLevel.PLATINUM_5G                         -> MonsterCategory.PHANTOM
     SignalLevel.FIVE_G                              -> MonsterCategory.ELITE

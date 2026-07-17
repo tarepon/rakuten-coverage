@@ -16,7 +16,6 @@ enum class StatusIconCategory { PLATINUM, NORMAL, BAD }
  * - BAD     : 弱電界 / 圏外 / 機内モード / SIMなし — 楽天回線として有効に使えない状態
  */
 fun statusIconCategory(level: SignalLevel): StatusIconCategory = when (level) {
-    SignalLevel.MILLIMETER_WAVE,
     SignalLevel.PLATINUM_5G,
     SignalLevel.PLATINUM      -> StatusIconCategory.PLATINUM
 
@@ -31,7 +30,6 @@ fun statusIconCategory(level: SignalLevel): StatusIconCategory = when (level) {
 
 /** 通知本文用の日本語表示名 (widget/MeasurementWidget.kt の shortLabel() と表記を揃えている) */
 fun signalLevelDisplayName(level: SignalLevel): String = when (level) {
-    SignalLevel.MILLIMETER_WAVE -> "ミリ波5G"
     SignalLevel.PLATINUM_5G     -> "プラチナ5G"
     SignalLevel.FIVE_G          -> "5G"
     SignalLevel.PLATINUM        -> "プラチナBand28"

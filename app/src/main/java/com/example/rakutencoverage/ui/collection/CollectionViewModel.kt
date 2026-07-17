@@ -53,7 +53,6 @@ class CollectionViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 光図鑑用レベル一覧 */
     val lightLevels = listOf(
-        SignalLevel.MILLIMETER_WAVE,
         SignalLevel.PLATINUM,
         SignalLevel.FIVE_G,
         SignalLevel.LTE

@@ -80,7 +80,6 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 信号レベル別・KDDI 別・圏外の件数集計 */
     data class SignalCounts(
-        val mmWave: Int    = 0,   // MILLIMETER_WAVE (n257)
         val fiveG: Int     = 0,
         val platinum: Int  = 0,
         val lte: Int       = 0,
@@ -96,7 +95,6 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     val signalCounts: StateFlow<SignalCounts> = measurementDao.observeAll()
         .map { list ->
             SignalCounts(
-                mmWave = list.count { it.signalLevel == SignalLevel.MILLIMETER_WAVE },
                 fiveG  = list.count { it.signalLevel == SignalLevel.FIVE_G },
                 platinum   = list.count { it.signalLevel == SignalLevel.PLATINUM },
                 lte        = list.count { it.signalLevel == SignalLevel.LTE },
