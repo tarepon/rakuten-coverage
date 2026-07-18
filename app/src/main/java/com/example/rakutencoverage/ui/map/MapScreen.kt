@@ -84,12 +84,10 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
     val last by vm.lastMeasurement.collectAsState()
     val isFollowing by vm.isFollowing.collectAsState()
     val checkIn by vm.checkIn.collectAsState()
-    val selectedInterval by vm.selectedInterval.collectAsState()
     val spotsByType by vm.spotsByType.collectAsState()
     val signalCounts by vm.signalCounts.collectAsState()
     val capture by vm.capture.collectAsState()
     val capturedMonster by vm.capturedMonster.collectAsState()
-    val autoCapture by vm.autoCapture.collectAsState()
     val showCoverageArea by vm.showCoverageArea.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -247,11 +245,9 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
             last = last,
             isFollowing = isFollowing,
             checkIn = checkIn,
-            selectedInterval = selectedInterval,
             signalCounts = signalCounts,
             capture = capture,
             capturedMonster = capturedMonster,
-            autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
             onCheckInClick = onNavigateToCheckIn,
             lassoEnabled = lassoEnabled,
@@ -270,11 +266,9 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
             last = last,
             isFollowing = isFollowing,
             checkIn = checkIn,
-            selectedInterval = selectedInterval,
             signalCounts = signalCounts,
             capture = capture,
             capturedMonster = capturedMonster,
-            autoCapture = autoCapture,
             showCoverageArea = showCoverageArea,
             onCheckInClick = onNavigateToCheckIn,
             lassoEnabled = lassoEnabled,
@@ -336,11 +330,9 @@ private fun PortraitMapLayout(
     last: Measurement?,
     isFollowing: Boolean,
     checkIn: com.example.rakutencoverage.ui.map.ArenaModeInput?,
-    selectedInterval: MeasureInterval,
     signalCounts: MapViewModel.SignalCounts,
     capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
-    autoCapture: Boolean,
     showCoverageArea: Boolean,
     onCheckInClick: () -> Unit,
     lassoEnabled: Boolean,
@@ -404,10 +396,6 @@ private fun PortraitMapLayout(
             vm = vm,
             isRunning = isRunning,
             isFollowing = isFollowing,
-            selectedInterval = selectedInterval,
-            checkIn = checkIn,
-            autoCapture = autoCapture,
-            showCoverageArea = showCoverageArea,
             lassoEnabled = lassoEnabled,
             onLassoToggle = onLassoToggle,
             onFollowClick = {
@@ -438,11 +426,9 @@ private fun LandscapeMapLayout(
     last: Measurement?,
     isFollowing: Boolean,
     checkIn: com.example.rakutencoverage.ui.map.ArenaModeInput?,
-    selectedInterval: MeasureInterval,
     signalCounts: MapViewModel.SignalCounts,
     capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
-    autoCapture: Boolean,
     showCoverageArea: Boolean,
     onCheckInClick: () -> Unit,
     lassoEnabled: Boolean,
@@ -540,10 +526,6 @@ private fun LandscapeMapLayout(
             vm = vm,
             isRunning = isRunning,
             isFollowing = isFollowing,
-            selectedInterval = selectedInterval,
-            checkIn = checkIn,
-            autoCapture = autoCapture,
-            showCoverageArea = showCoverageArea,
             lassoEnabled = lassoEnabled,
             onLassoToggle = onLassoToggle,
             onFollowClick = {
@@ -671,28 +653,13 @@ private fun BottomHud(
     vm: MapViewModel,
     isRunning: Boolean,
     isFollowing: Boolean,
-    selectedInterval: MeasureInterval,
-    checkIn: ArenaModeInput?,
-    autoCapture: Boolean,
-    showCoverageArea: Boolean,
     lassoEnabled: Boolean,
     onLassoToggle: () -> Unit,
     onFollowClick: () -> Unit,
     modifier: Modifier = Modifier,
     vertical: Boolean = false
 ) {
-    var showSettingsSheet by remember { mutableStateOf(false) }
-
     val buttons: @Composable () -> Unit = {
-        CircleIconButton(
-            emoji = "⋯",
-            label = "設定",
-            size = 52.dp,
-            active = checkIn != null || autoCapture,
-            onClick = { showSettingsSheet = true },
-            labelAtStart = vertical
-        )
-
         CircleIconButton(
             emoji = "✂️",
             label = "囲んで保存",
@@ -734,15 +701,6 @@ private fun BottomHud(
         ) { buttons() }
     }
 
-    if (showSettingsSheet) {
-        MapSettingsSheet(
-            vm = vm,
-            selectedInterval = selectedInterval,
-            autoCapture = autoCapture,
-            showCoverageArea = showCoverageArea,
-            onDismiss = { showSettingsSheet = false }
-        )
-    }
 }
 
 /**
@@ -868,67 +826,6 @@ private fun HudLabel(text: String) {
             color = GoWhite,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         )
-    }
-}
-
-/** チェックイン・計測間隔・自動捕獲をまとめたボトムシート（旧FabColumnの詳細設定群）。 */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MapSettingsSheet(
-    vm: MapViewModel,
-    selectedInterval: MeasureInterval,
-    autoCapture: Boolean,
-    showCoverageArea: Boolean,
-    onDismiss: () -> Unit
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Text("⚙️ マッピング設定", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("自動捕獲", fontSize = 14.sp)
-                Switch(checked = autoCapture, onCheckedChange = { vm.setAutoCapture(it) })
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("エリア表示", fontSize = 14.sp)
-                    Text("自分の実測データから塗るカバレッジ範囲（自作・非公式）", fontSize = 10.sp)
-                }
-                Switch(checked = showCoverageArea, onCheckedChange = { vm.setShowCoverageArea(it) })
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("マッピング間隔", fontSize = 14.sp)
-                IntervalSelector(selectedInterval) { vm.setInterval(it) }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun IntervalSelector(selected: MeasureInterval, onSelect: (MeasureInterval) -> Unit) {
-    SingleChoiceSegmentedButtonRow {
-        MeasureInterval.entries.forEachIndexed { index, interval ->
-            SegmentedButton(
-                selected = selected == interval,
-                onClick = { onSelect(interval) },
-                shape = SegmentedButtonDefaults.itemShape(index, MeasureInterval.entries.size),
-                label = { Text(interval.label, fontSize = 11.sp) }
-            )
-        }
     }
 }
 

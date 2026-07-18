@@ -101,8 +101,8 @@ private val navItems = listOf(
     NavItem("map",        "マップ",       "🗺️"),
     NavItem("checkin",    "チェックイン", "🎫"),
     NavItem("history",    "履歴",         "📋"),
-    NavItem("settings",   "設定",         "⚙️"),
     NavItem("collection", "図鑑",         "📖"),
+    NavItem("settings",   "設定",         "⚙️"),
 )
 
 @Composable

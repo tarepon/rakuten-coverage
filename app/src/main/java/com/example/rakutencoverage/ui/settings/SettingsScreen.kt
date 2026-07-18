@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.AppDatabase
 import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.map.MapViewModel
+import com.example.rakutencoverage.ui.map.MeasureInterval
 import com.example.rakutencoverage.util.BackupManager
 import com.example.rakutencoverage.util.DataExporter
 import kotlinx.coroutines.Dispatchers
@@ -145,6 +147,55 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
                     }
                 }
             )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // ---------- マッピング設定 ----------
+        Text(
+            "マッピング設定",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        val autoCapture by vm.autoCapture.collectAsState()
+        val showCoverageArea by vm.showCoverageArea.collectAsState()
+        val selectedInterval by vm.selectedInterval.collectAsState()
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "🐾 自動捕獲",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Switch(checked = autoCapture, onCheckedChange = { vm.setAutoCapture(it) })
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("🗺️ エリア表示", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "自分の実測データから塗るカバレッジ範囲（自作・非公式）",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(checked = showCoverageArea, onCheckedChange = { vm.setShowCoverageArea(it) })
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("⏱ マッピング間隔", style = MaterialTheme.typography.bodyLarge)
+            IntervalSelector(selectedInterval) { vm.setInterval(it) }
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -354,4 +405,19 @@ private fun ClearDataDialog(
             TextButton(onClick = onDismiss) { Text("キャンセル") }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IntervalSelector(selected: MeasureInterval, onSelect: (MeasureInterval) -> Unit) {
+    SingleChoiceSegmentedButtonRow {
+        MeasureInterval.entries.forEachIndexed { index, interval ->
+            SegmentedButton(
+                selected = selected == interval,
+                onClick = { onSelect(interval) },
+                shape = SegmentedButtonDefaults.itemShape(index, MeasureInterval.entries.size),
+                label = { Text(interval.label, fontSize = 11.sp) }
+            )
+        }
+    }
 }
