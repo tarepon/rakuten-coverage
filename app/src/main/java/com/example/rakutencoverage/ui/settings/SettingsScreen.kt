@@ -1,4 +1,4 @@
-package com.example.rakutencoverage.ui.export
+package com.example.rakutencoverage.ui.settings
 
 import android.app.Activity
 import android.content.Intent
@@ -7,11 +7,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -27,7 +30,7 @@ import java.io.File
 import java.time.LocalDate
 
 @Composable
-fun ExportScreen(vm: MapViewModel = viewModel()) {
+fun SettingsScreen(vm: MapViewModel = viewModel()) {
     val measurements by vm.measurements.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -103,11 +106,56 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("データ管理", style = MaterialTheme.typography.headlineSmall)
+        Text("⚙️ 設定", style = MaterialTheme.typography.headlineSmall)
+
+        // ---------- アプリ設定 ----------
+        Text(
+            "アプリ設定",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        var keepScreenOn by remember { mutableStateOf(SettingsStore.keepScreenOn(context)) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("📱 常に画面をONにする", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "計測中にスリープさせない(電池消費は増えます)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = keepScreenOn,
+                onCheckedChange = { enabled ->
+                    keepScreenOn = enabled
+                    SettingsStore.setKeepScreenOn(context, enabled)
+                    (context as? Activity)?.window?.let { window ->
+                        if (enabled) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // ---------- データ管理 ----------
+        Text(
+            "データ管理",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
         Text("計測件数: ${measurements.size} 件", style = MaterialTheme.typography.bodyMedium)
 
         // 位置情報を含むデータであることの常設注意
@@ -180,35 +228,6 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text("GeoJSON でエクスポート") }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-        // アプリ設定
-        var keepScreenOn by remember { mutableStateOf(SettingsStore.keepScreenOn(context)) }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("📱 常に画面をONにする", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "計測中にスリープさせない(電池消費は増えます)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(
-                checked = keepScreenOn,
-                onCheckedChange = { enabled ->
-                    keepScreenOn = enabled
-                    SettingsStore.setKeepScreenOn(context, enabled)
-                    (context as? Activity)?.window?.let { window ->
-                        if (enabled) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                }
-            )
-        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 

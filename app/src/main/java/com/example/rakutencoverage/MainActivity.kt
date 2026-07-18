@@ -33,7 +33,7 @@ import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
 import com.example.rakutencoverage.ui.checkin.CheckInScreen
 import com.example.rakutencoverage.ui.collection.CollectionScreen
-import com.example.rakutencoverage.ui.export.ExportScreen
+import com.example.rakutencoverage.ui.settings.SettingsScreen
 import com.example.rakutencoverage.ui.history.HistoryScreen
 import com.example.rakutencoverage.ui.map.MapScreen
 import com.example.rakutencoverage.ui.map.MapViewModel
@@ -101,7 +101,7 @@ private val navItems = listOf(
     NavItem("map",        "マップ",       "🗺️"),
     NavItem("checkin",    "チェックイン", "🎫"),
     NavItem("history",    "履歴",         "📋"),
-    NavItem("export",     "エクスポート", "📤"),
+    NavItem("settings",   "設定",         "⚙️"),
     NavItem("collection", "図鑑",         "📖"),
 )
 
@@ -181,7 +181,7 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
                 )
             }
             composable("history")    { HistoryScreen(mapViewModel) }
-            composable("export")     { ExportScreen(mapViewModel) }
+            composable("settings")   { SettingsScreen(mapViewModel) }
             composable("collection") { CollectionScreen() }
             // チェックインはボトムナビのトップレベル画面(記録/スタンプの2タブ)
             composable("checkin") {
