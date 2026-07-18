@@ -121,7 +121,7 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
 }
 
 /**
- * 光図鑑・闇図鑑用の大型タイル。全幅×160dp、カテゴリ色のグラデーション背景 + 大きな絵文字。
+ * 光図鑑・闇図鑑用のコンパクト行タイル。絵文字を左、名称＋レア度/匹数を右に横並びした2行構成。
  * LazyColumn に縦に並べて使用する。
  */
 @Composable
@@ -134,13 +134,12 @@ private fun MonsterTile(
     val isCaptured = count > 0
     val baseColor = Color(level.toArgb())
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(
-                Brush.verticalGradient(
+                Brush.horizontalGradient(
                     colors = if (isCaptured)
                         listOf(baseColor.copy(alpha = 0.9f), baseColor.copy(alpha = 0.5f))
                     else
@@ -148,30 +147,27 @@ private fun MonsterTile(
                 )
             )
             .then(if (monsterCount > 0) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(14.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Text(level.toEmoji(), fontSize = 30.sp)
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 level.displayName(),
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = if (isCaptured) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
-            Spacer(Modifier.weight(1f))
-            Text(level.toEmoji(), fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Spacer(Modifier.weight(1f))
             Text(
-                level.rarity(),
-                fontSize = 10.sp,
-                color = if (isCaptured) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "${monsterCount}匹" + if (monsterCount > 0) " ・ タップで一覧" else "",
+                level.rarity() + " ・ ${monsterCount}匹" + if (monsterCount > 0) " ・ タップで一覧" else "",
                 fontSize = 11.sp,
                 fontWeight = if (monsterCount > 0) FontWeight.Bold else FontWeight.Normal,
-                color = if (isCaptured) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isCaptured) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
