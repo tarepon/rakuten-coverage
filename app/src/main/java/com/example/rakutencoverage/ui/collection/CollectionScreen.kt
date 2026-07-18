@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -60,23 +59,16 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
             Spacer(Modifier.height(8.dp))
         }
 
-        item {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                items(vm.lightLevels) { level ->
-                    MonsterTile(
-                        level = level,
-                        count = capturedCount[level] ?: 0,
-                        monsterCount = monstersByLevel[level]?.size ?: 0,
-                        onClick = {
-                            selectedLevel = level
-                            scope.launch { sheetState.show() }
-                        }
-                    )
+        items(vm.lightLevels) { level ->
+            MonsterTile(
+                level = level,
+                count = capturedCount[level] ?: 0,
+                monsterCount = monstersByLevel[level]?.size ?: 0,
+                onClick = {
+                    selectedLevel = level
+                    scope.launch { sheetState.show() }
                 }
-            }
+            )
         }
 
         item {
@@ -87,23 +79,16 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
             Spacer(Modifier.height(8.dp))
         }
 
-        item {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                items(vm.darkLevels) { level ->
-                    MonsterTile(
-                        level = level,
-                        count = capturedCount[level] ?: 0,
-                        monsterCount = monstersByLevel[level]?.size ?: 0,
-                        onClick = {
-                            selectedLevel = level
-                            scope.launch { sheetState.show() }
-                        }
-                    )
+        items(vm.darkLevels) { level ->
+            MonsterTile(
+                level = level,
+                count = capturedCount[level] ?: 0,
+                monsterCount = monstersByLevel[level]?.size ?: 0,
+                onClick = {
+                    selectedLevel = level
+                    scope.launch { sheetState.show() }
                 }
-            }
+            )
         }
 
         item {
@@ -136,8 +121,8 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
 }
 
 /**
- * 光図鑑・闇図鑑用の大型タイル。160dp角、カテゴリ色のグラデーション背景 + 大きな絵文字。
- * 横スクロールの LazyRow に並べて使用する。
+ * 光図鑑・闇図鑑用の大型タイル。全幅×160dp、カテゴリ色のグラデーション背景 + 大きな絵文字。
+ * LazyColumn に縦に並べて使用する。
  */
 @Composable
 private fun MonsterTile(
@@ -151,7 +136,8 @@ private fun MonsterTile(
 
     Box(
         modifier = Modifier
-            .size(160.dp)
+            .fillMaxWidth()
+            .height(160.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.verticalGradient(

@@ -28,7 +28,7 @@ enum class MonsterCategory(
         defenseRange = 70..100
     ),
     PHANTOM(
-        displayName = "幻のプラチナ5Gモンスター",
+        displayName = "幻の5Gミリ波モンスター",
         rarityLabel = "★★★★★ 幻",
         starCount = 5,
         emoji = "🤩",
@@ -58,8 +58,8 @@ enum class MonsterCategory(
         defenseRange = 1..100
     ),
     ROCKET(
-        displayName = "ロケット団の鬼",
-        rarityLabel = "★★☆☆☆ ロケット団",
+        displayName = "親切な隣人の鬼",
+        rarityLabel = "★★☆☆☆ 親切な隣人",
         starCount = 2,
         emoji = "👹",
         argbColor = 0xFF5D4037L,
