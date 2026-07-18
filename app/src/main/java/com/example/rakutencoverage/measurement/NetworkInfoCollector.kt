@@ -5,6 +5,10 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import android.telephony.*
+import java.util.concurrent.Executor
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * 端末の通信状態を一括取得するデータクラス。
@@ -29,28 +33,69 @@ data class NetworkSnapshot(
  */
 class NetworkInfoCollector(private val context: Context) {
 
+    private companion object {
+        /** requestCellInfoUpdate の応答待ちタイムアウト */
+        const val CELL_INFO_UPDATE_TIMEOUT_MS = 2000L
+    }
+
     private val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
     /**
      * 端末の現在の通信状態を収集して NetworkSnapshot として返す。
      * 優先順: 機内モード → SIMなし → 圏外 → 通常の電波
+     * API 29+ では requestCellInfoUpdate でモデムに最新セル情報を要求してから読む
+     * (getAllCellInfo はOSのキャッシュを返すだけで、SIM入れ替え後などに古いバンドを
+     *  返し続けることがあるため)。
      * @return NetworkSnapshot (isValidMeasurement=false なら計測データとしては無効)
      */
     @SuppressLint("MissingPermission")
-    fun collect(): NetworkSnapshot {
+    suspend fun collect(): NetworkSnapshot {
         if (isAirplaneMode()) {
             return NetworkSnapshot("AIRPLANE_MODE", null, null, null, isValidMeasurement = false)
         }
         if (isNoSim()) {
             return NetworkSnapshot("NO_SIM", null, null, null, isValidMeasurement = false)
         }
-        val networkType = resolveNetworkType()
+        val cellInfo = freshCellInfo()
+        val networkType = resolveNetworkType(cellInfo)
         if (networkType == "NO_SERVICE") {
             return NetworkSnapshot("NO_SERVICE", null, null, null, isValidMeasurement = true)
         }
         val carrier = tm.networkOperatorName.takeIf { it.isNotBlank() }
-        val (band, rssi, cellId) = resolveBandRssiAndCellId()
+        val (band, rssi, cellId) = resolveBandRssiAndCellId(cellInfo)
         return NetworkSnapshot(networkType, band, rssi, carrier, isValidMeasurement = true, cellId = cellId)
+    }
+
+    /**
+     * API 29+ で requestCellInfoUpdate によりモデムへ最新セル情報を要求し、
+     * 結果を最大2秒待って返す。タイムアウト・エラー時は従来どおり
+     * getAllCellInfo (キャッシュ) にフォールバックする。API 29 未満は空リスト。
+     */
+    @SuppressLint("MissingPermission")
+    private suspend fun freshCellInfo(): List<CellInfo> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyList()
+
+        val fresh: List<CellInfo>? = withTimeoutOrNull(CELL_INFO_UPDATE_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                try {
+                    tm.requestCellInfoUpdate(
+                        Executor { it.run() },
+                        object : TelephonyManager.CellInfoCallback() {
+                            override fun onCellInfo(cellInfo: MutableList<CellInfo>) {
+                                if (cont.isActive) cont.resume(cellInfo)
+                            }
+
+                            override fun onError(errorCode: Int, detail: Throwable?) {
+                                if (cont.isActive) cont.resume(null)
+                            }
+                        }
+                    )
+                } catch (e: Exception) {
+                    if (cont.isActive) cont.resume(null)
+                }
+            }
+        }
+        return fresh ?: runCatching { tm.allCellInfo }.getOrNull() ?: emptyList()
     }
 
     /** Settings.Global.AIRPLANE_MODE_ON が 1 なら機内モード */
@@ -64,24 +109,20 @@ class NetworkInfoCollector(private val context: Context) {
 
     /**
      * ネットワーク種別を取得する。
-     * API 29+ では READ_PHONE_STATE 不要の allCellInfo からセル種別を判定する。
+     * API 29+ では READ_PHONE_STATE 不要のセル情報 (freshCellInfo の結果) から種別を判定する。
      * API 26-28 では dataNetworkType を使用（READ_PHONE_STATE が必要、maxSdkVersion=28 で宣言済み）。
      * SecurityException は念のためキャッチし NO_SERVICE を返す。
      */
     @SuppressLint("MissingPermission")
-    private fun resolveNetworkType(): String {
-        // API 29+ は allCellInfo からセル種別を導出（READ_PHONE_STATE 不要）
+    private fun resolveNetworkType(cellInfo: List<CellInfo>): String {
+        // API 29+ はセル情報からセル種別を導出（READ_PHONE_STATE 不要）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return try {
-                when (tm.allCellInfo.firstOrNull()) {
-                    is CellInfoNr    -> "5G"
-                    is CellInfoLte   -> "LTE"
-                    is CellInfoWcdma -> "3G"
-                    is CellInfoGsm   -> "2G"
-                    else             -> "NO_SERVICE"
-                }
-            } catch (e: SecurityException) {
-                "NO_SERVICE"
+            return when (cellInfo.firstOrNull()) {
+                is CellInfoNr    -> "5G"
+                is CellInfoLte   -> "LTE"
+                is CellInfoWcdma -> "3G"
+                is CellInfoGsm   -> "2G"
+                else             -> "NO_SERVICE"
             }
         }
         // API 26-28: dataNetworkType（READ_PHONE_STATE が必要）
@@ -102,17 +143,16 @@ class NetworkInfoCollector(private val context: Context) {
     }
 
     /**
-     * allCellInfo から最初のセル情報を取得し、バンド名と RSSI を返す。
+     * セル情報 (freshCellInfo の結果) から最初のセルを取得し、バンド名と RSSI を返す。
      * Android Q (API 29) 未満はセル情報取得不可のため (null, null, null) を返す。
      * バンド名 (CellIdentityNr/Lte.bands) は API 30 (R) 以上でのみ取得可。API 29 では null。
      * 5G (NR) と LTE のみ対応。それ以外は (null, null)。
-     * @return Pair(バンド名, RSSI dBm)
+     * @return Triple(バンド名, RSSI dBm, セルID)
      */
-    @SuppressLint("MissingPermission")
-    private fun resolveBandRssiAndCellId(): Triple<String?, Int?, String?> {
+    private fun resolveBandRssiAndCellId(cellInfo: List<CellInfo>): Triple<String?, Int?, String?> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return Triple(null, null, null)
 
-        val info = tm.allCellInfo.firstOrNull() ?: return Triple(null, null, null)
+        val info = cellInfo.firstOrNull() ?: return Triple(null, null, null)
         return when (info) {
             is CellInfoNr -> {
                 val identity = info.cellIdentity as CellIdentityNr
