@@ -1,6 +1,8 @@
 package com.example.rakutencoverage.ui.export
 
+import android.app.Activity
 import android.content.Intent
+import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -14,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.AppDatabase
+import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.map.MapViewModel
 import com.example.rakutencoverage.util.BackupManager
 import com.example.rakutencoverage.util.DataExporter
@@ -177,6 +180,35 @@ fun ExportScreen(vm: MapViewModel = viewModel()) {
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text("GeoJSON でエクスポート") }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // アプリ設定
+        var keepScreenOn by remember { mutableStateOf(SettingsStore.keepScreenOn(context)) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("📱 常に画面をONにする", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "計測中にスリープさせない(電池消費は増えます)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = keepScreenOn,
+                onCheckedChange = { enabled ->
+                    keepScreenOn = enabled
+                    SettingsStore.setKeepScreenOn(context, enabled)
+                    (context as? Activity)?.window?.let { window ->
+                        if (enabled) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+            )
+        }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 

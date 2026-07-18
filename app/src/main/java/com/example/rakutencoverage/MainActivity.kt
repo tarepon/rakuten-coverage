@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +29,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
 import com.example.rakutencoverage.ui.checkin.CheckInScreen
 import com.example.rakutencoverage.ui.collection.CollectionScreen
@@ -62,6 +64,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (SettingsStore.keepScreenOn(this)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         permissionLauncher.launch(requiredPermissions)
         autoMeasure.value = intent.getBooleanExtra(EXTRA_AUTO_MEASURE, false)
         setContent { RakutenCoverageTheme { RakutenCoverageApp(autoMeasure) } }
