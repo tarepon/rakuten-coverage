@@ -21,10 +21,6 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     fun observeAll(): Flow<List<Measurement>>
 
-    /** 最新1件をリアルタイム監視する Flow (バックグラウンド計測サービスの結果を前面 UI に反映するために使用) */
-    @Query("SELECT * FROM measurements ORDER BY id DESC LIMIT 1")
-    fun observeLatest(): Flow<Measurement?>
-
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     suspend fun getAll(): List<Measurement>
 

@@ -53,7 +53,7 @@ enum class MeasureInterval(val seconds: Int, val label: String) {
  * マップ画面の状態管理 ViewModel。
  * - GPS 計測ループそのものは MeasurementService (フォアグラウンドサービス) が担い、
  *   VM/Activity が破棄されてもバックグラウンドで計測を継続する。
- * - 最新計測の購読 (observeLatestMeasurement): measurementDao.observeLatest() の Flow を購読し、
+ * - 最新計測の購読 (observeLatestMeasurement): MeasurementController.latestMeasurement を購読し、
  *   キャラ表示更新・モンスター発見演出(前面 UI のみ)を行う
  * - 表示更新ループ (displayJob): 3s ごとに電波チェックのみ実行し、キャラ表示を更新
  * - スタンプ付与・DB保存・重複排除: MeasurementService 側で完結(measurement/MeasurementService.kt 参照)
@@ -203,14 +203,16 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * MeasurementService が DB に保存した最新の計測結果を購読する。
+     * MeasurementService がこのプロセスで実行した最新計測を購読する。
      * GPS 計測ループそのもの(収集・重複排除・DB保存・スタンプ判定)はサービス側に移り、
      * VM はここで結果を受け取ってキャラ表示更新とモンスター発見演出(前面 UI のみ)を行う。
-     * VM の生存期間に関わらずサービスは動き続けるため、計測ループの起動/停止はここでは行わない。
+     * DB の最新行 (旧 observeLatest) ではなくメモリ上の MeasurementController を購読する —
+     * バックアップ復元・インポートで挿入された過去レコードを「現在の電波状態」として
+     * 表示しないため(実測するまで StatusPill は表示されない)。
      */
     private fun observeLatestMeasurement() {
         viewModelScope.launch {
-            measurementDao.observeLatest().collect { result ->
+            MeasurementController.latestMeasurement.collect { result ->
                 if (result != null) onNewMeasurement(result)
             }
         }
