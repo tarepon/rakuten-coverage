@@ -65,16 +65,33 @@ fun selectMeasurementCellIndex(cells: List<CellCandidate>): Int? {
 }
 
 /**
+ * TelephonyDisplayInfo 由来の NSA 5G 接続情報でセル由来の判定を補正する純粋関数。
+ * allCellInfo に NR セルが一切現れない端末では、在圏 LTE アンカーのまま NSA 5G 通信
+ * していることがあるため、LTE + NR 接続中 → "5G" に昇格する。
+ * その際バンドは LTE アンカーのもの (NR バンドではない) のため null に落とす
+ * ("Band 28" アンカーが 5G n28 プラチナと誤判定されるのを防ぐ。resolveSignalLevel 参照)。
+ * LTE 以外 (すでに 5G 判定済み・3G 等) はそのまま返す。
+ */
+fun applyNrOverride(networkType: String, band: String?, nrConnected: Boolean): Pair<String, String?> =
+    if (nrConnected && networkType == "LTE") "5G" to null else networkType to band
+
+/**
  * TelephonyManager を使って端末の通信状態を収集するクラス。
  * 機内モード・SIM不在を優先的に検出し、それ以外はバンド・RSSI・キャリアを取得する。
  *
- * 注意: ステータスバーの 5G アイコンは TelephonyDisplayInfo (overrideNetworkType) 由来で
- * OEM/キャリアのポリシー依存だが、その購読には READ_PHONE_STATE が必要 (本アプリは
- * API 29+ では非保持)。ここでは allCellInfo に現れる NR セルの検出で近似する。
+ * 5G 判定は 2 系統の併用:
+ *  - allCellInfo に現れる NR セルの検出 (SA / NR セルを報告する NSA 端末)
+ *  - DisplayInfoMonitor (TelephonyDisplayInfo) による NSA 補正 (API 31+。
+ *    NR セルを報告しない NSA 端末でもステータスバーの 5G 表示と一致させる)
  */
 class NetworkInfoCollector(private val context: Context) {
 
     private val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+    init {
+        // 初回計測までに TelephonyDisplayInfo の初期コールバックが届くよう早めに購読開始
+        DisplayInfoMonitor.ensureStarted(context)
+    }
 
     /**
      * 端末の現在の通信状態を収集して NetworkSnapshot として返す。
@@ -82,6 +99,7 @@ class NetworkInfoCollector(private val context: Context) {
      * @return NetworkSnapshot (isValidMeasurement=false なら計測データとしては無効)
      */
     fun collect(): NetworkSnapshot {
+        DisplayInfoMonitor.ensureStarted(context)
         if (isAirplaneMode()) {
             return NetworkSnapshot("AIRPLANE_MODE", null, null, null, isValidMeasurement = false)
         }
@@ -138,7 +156,10 @@ class NetworkInfoCollector(private val context: Context) {
                     identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = false) }
                 else null
                 val cellId   = identity.ci.takeIf { it != Int.MAX_VALUE }?.toString()
-                NetworkSnapshot("LTE", bandName, signal.dbm.takeIfAvailable(), carrier, cellId = cellId)
+                // NR セルがリストに現れない端末の NSA 5G は TelephonyDisplayInfo で補正
+                // (RSSI・セルIDは実測可能な LTE アンカーのものをそのまま記録する)
+                val (netType, band) = applyNrOverride("LTE", bandName, DisplayInfoMonitor.isNrConnected)
+                NetworkSnapshot(netType, band, signal.dbm.takeIfAvailable(), carrier, cellId = cellId)
             }
             is CellInfoWcdma -> NetworkSnapshot("3G", null, null, carrier)
             is CellInfoGsm   -> NetworkSnapshot("2G", null, null, carrier)
