@@ -1,6 +1,7 @@
 package com.example.rakutencoverage
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
@@ -11,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,17 +51,19 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             add(Manifest.permission.READ_PHONE_STATE)
         }
-        // バックグラウンド計測サービスの通知表示に必要（API 33+ のみダイアログが出る）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(Manifest.permission.POST_NOTIFICATIONS)
-        }
     }.toTypedArray()
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) {}
+    ) { grants ->
+        if (grants[Manifest.permission.ACCESS_FINE_LOCATION] == true && pendingAutoMeasure) {
+            pendingAutoMeasure = false
+            autoMeasure.value = true
+        }
+    }
 
     private val autoMeasure = mutableStateOf(false)
+    private var pendingAutoMeasure = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,9 +71,33 @@ class MainActivity : ComponentActivity() {
         if (SettingsStore.keepScreenOn(this)) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
-        permissionLauncher.launch(requiredPermissions)
-        autoMeasure.value = intent.getBooleanExtra(EXTRA_AUTO_MEASURE, false)
+        val hasLocationPermission = hasLocationPermission()
+        pendingAutoMeasure = intent.getBooleanExtra(EXTRA_AUTO_MEASURE, false)
+        if (!hasLocationPermission) {
+            showLocationDisclosure()
+        } else if (pendingAutoMeasure) {
+            pendingAutoMeasure = false
+            autoMeasure.value = true
+        }
         setContent { RakutenCoverageTheme { RakutenCoverageApp(autoMeasure) } }
+    }
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+
+    /** Play の位置情報ポリシーに沿い、OS 権限ダイアログの直前に用途を明示する。 */
+    private fun showLocationDisclosure() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("位置情報を使用します")
+            .setMessage(
+                "電波の計測地点を地図に記録するため、正確な位置情報を使用します。" +
+                    "計測開始後は、アプリを閉じている間も通知を表示して計測を続け、" +
+                    "停止ボタンを押すと取得を終了します。記録は端末内に保存されます。"
+            )
+            .setPositiveButton("権限を確認") { _, _ -> permissionLauncher.launch(requiredPermissions) }
+            .setNegativeButton("今はしない", null)
+            .show()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -78,7 +106,12 @@ class MainActivity : ComponentActivity() {
         // referrer が自アプリ（ウィジェット PendingIntent）の場合のみ AUTO_MEASURE を処理する
         val fromSelf = referrer?.host == packageName
         if (fromSelf && intent.getBooleanExtra(EXTRA_AUTO_MEASURE, false)) {
-            autoMeasure.value = true
+            if (hasLocationPermission()) {
+                autoMeasure.value = true
+            } else {
+                pendingAutoMeasure = true
+                showLocationDisclosure()
+            }
         }
     }
 }
