@@ -1,6 +1,14 @@
 #!/bin/bash
 # ビルド→署名→実機インストール→検証 を一気通貫で行う。
-# 署名パスワードはapksignerの対話プロンプトで直接入力する(このスクリプト・Claudeには渡らない)。
+#
+# 署名パスワードは macOS Keychain に登録しておけば自動取得する(平文ファイル不使用)。
+# 未登録なら従来どおり apksigner の対話プロンプトで入力する。
+#
+# Keychainへの登録(初回のみ。-w でパスワードは隠し入力され、履歴に残らない):
+#   security add-generic-password -a "$USER" -s platinum-hunter-ks -w    # keystoreパスワード
+#   security add-generic-password -a "$USER" -s platinum-hunter-key -w   # キーパスワード(storeと同じなら省略可)
+# 解除したいとき:
+#   security delete-generic-password -s platinum-hunter-ks
 #
 # 使い方:
 #   ./scripts/sign_and_install.sh              # ビルドから実行 (推奨)
@@ -35,9 +43,21 @@ fi
 
 BUILD_TOOLS_DIR=$(ls -d "$HOME"/Library/Android/sdk/build-tools/*/ | sort -V | tail -1)
 
-echo "▶ 署名中... (keystoreパスワード・キーパスワードの入力を求められます)"
+# Keychainからパスワードを取得 (未登録なら空)。環境変数経由でapksignerへ渡すため
+# プロセス一覧(ps)にも露出しない。キーパスワード未登録時はstoreパスワードを流用する
+KS_PASS_VAL=$(security find-generic-password -w -s platinum-hunter-ks 2>/dev/null || true)
 rm -f "$APK_SIGNED"
-"${BUILD_TOOLS_DIR}apksigner" sign --ks release.jks --ks-key-alias release --out "$APK_SIGNED" "$APK_UNSIGNED"
+if [ -n "$KS_PASS_VAL" ]; then
+  KEY_PASS_VAL=$(security find-generic-password -w -s platinum-hunter-key 2>/dev/null || true)
+  echo "▶ 署名中... (パスワードはKeychainから自動取得)"
+  KS_PASS="$KS_PASS_VAL" KEY_PASS="${KEY_PASS_VAL:-$KS_PASS_VAL}" \
+    "${BUILD_TOOLS_DIR}apksigner" sign --ks release.jks --ks-key-alias release \
+    --ks-pass env:KS_PASS --key-pass env:KEY_PASS --out "$APK_SIGNED" "$APK_UNSIGNED"
+else
+  echo "▶ 署名中... (keystoreパスワード・キーパスワードの入力を求められます)"
+  echo "   ※ 次回から自動化するにはスクリプト冒頭のコメントにあるKeychain登録コマンドを実行"
+  "${BUILD_TOOLS_DIR}apksigner" sign --ks release.jks --ks-key-alias release --out "$APK_SIGNED" "$APK_UNSIGNED"
+fi
 
 echo "▶ 実機へインストール中..."
 "$ADB" install -r "$APK_SIGNED"
