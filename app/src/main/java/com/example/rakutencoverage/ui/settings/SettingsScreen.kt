@@ -391,23 +391,18 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
         }
 
         var showLicenses by remember { mutableStateOf(false) }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                onClick = {
-                    runCatching {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)))
-                    }
-                },
-                modifier = Modifier.weight(1f)
-            ) { Text("プライバシーポリシー", maxLines = 1) }
-            OutlinedButton(
-                onClick = { showLicenses = true },
-                modifier = Modifier.weight(1f)
-            ) { Text("ライセンス", maxLines = 1) }
-        }
+        OutlinedButton(
+            onClick = {
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)))
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("プライバシーポリシー", maxLines = 1) }
+        OutlinedButton(
+            onClick = { showLicenses = true },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("ライセンス", maxLines = 1) }
 
         if (showLicenses) {
             AlertDialog(
