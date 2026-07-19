@@ -6,10 +6,12 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.rakutencoverage.MainActivity
 import com.example.rakutencoverage.R
 import com.example.rakutencoverage.data.AppDatabase
@@ -72,8 +74,11 @@ class MeasurementService : Service() {
         when (intent?.action) {
             ACTION_START -> startMeasuring()
             ACTION_STOP  -> stopMeasuring()
+            // START_STICKY でプロセスごと再生成された場合は、権限・設定などの
+            // プロセス内状態を復元できない。何もしていない Service を残さない。
+            else -> stopSelf(startId)
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startMeasuring() {
@@ -92,7 +97,15 @@ class MeasurementService : Service() {
         loopJob = scope.launch {
             while (true) {
                 ensureActive()
-                runCatching { runSingleMeasurement() }
+                try {
+                    runSingleMeasurement()
+                } catch (_: SecurityException) {
+                    // 計測中に位置情報権限を取り消された場合、失敗ループを回し続けない。
+                    stopMeasuring()
+                    return@launch
+                } catch (_: Exception) {
+                    // GPSや通信の一時失敗は次の計測周期で再試行する。
+                }
                 ensureActive()
                 delay(MeasurementController.intervalMs.value)
             }
@@ -282,9 +295,17 @@ class MeasurementService : Service() {
         private const val LEGACY_CHANNEL_ID = "measurement_status"
         private const val CHANNEL_ID = "measurement_status_v2"
 
-        fun start(context: Context) {
+        fun start(context: Context): Boolean {
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) return false
+
             val intent = Intent(context, MeasurementService::class.java).setAction(ACTION_START)
-            context.startForegroundService(intent)
+            return runCatching {
+                ContextCompat.startForegroundService(context, intent)
+            }.isSuccess
         }
 
         fun stop(context: Context) {
