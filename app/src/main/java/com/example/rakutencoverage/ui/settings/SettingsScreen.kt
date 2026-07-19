@@ -370,7 +370,7 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            "作者: tarepon",
+            "作者: WILL",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth()
