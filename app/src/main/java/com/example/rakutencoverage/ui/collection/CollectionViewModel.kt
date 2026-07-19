@@ -84,10 +84,10 @@ class CollectionViewModel(app: Application) : AndroidViewModel(app) {
     /** 圏外クエスト一覧 */
     val noSignalQuests = noSignalCount.map { count ->
         listOf(
-            QuestEntry("圏外ハンター入門", "圏外を初めて記録せよ", count, 1),
-            QuestEntry("圏外5箇所制覇", "異なる5セルで圏外を記録せよ", count, 5),
-            QuestEntry("圏外20箇所制覇", "異なる20セルで圏外を記録せよ", count, 20),
-            QuestEntry("圏外50箇所制覇", "異なる50セルで圏外を記録せよ", count, 50),
+            QuestEntry("圏外ハンター入門", "圏外を初めて捕獲せよ", count, 1),
+            QuestEntry("圏外5箇所制覇", "異なる5セルで圏外を捕獲せよ", count, 5),
+            QuestEntry("圏外20箇所制覇", "異なる20セルで圏外を捕獲せよ", count, 20),
+            QuestEntry("圏外50箇所制覇", "異なる50セルで圏外を捕獲せよ", count, 50),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

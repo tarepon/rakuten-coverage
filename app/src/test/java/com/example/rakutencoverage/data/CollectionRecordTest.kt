@@ -31,6 +31,17 @@ class CollectionRecordTest {
     }
 
     @Test
+    fun noSignalCellGridIs555m() {
+        // 圏外セルは0.005度(約555m)グリッド。グリッド内は同一セル、跨いだら別セル
+        val base = latLngToCellId(35.0000, 137.0000, SignalLevel.NO_SIGNAL)
+        val sameCell = latLngToCellId(35.0020, 137.0020, SignalLevel.NO_SIGNAL)   // +0.002度: 丸めて同一
+        val nextCell = latLngToCellId(35.0030, 137.0000, SignalLevel.NO_SIGNAL)   // +0.003度: 隣のグリッド
+        assertEquals(base, sameCell)
+        assert(base != nextCell)
+        assert(base.startsWith("nosig:"))
+    }
+
+    @Test
     fun airplaneModeAndNoSimAreNotCollectable() {
         assertEquals(99, SignalLevel.AIRPLANE_MODE.rarityRank)
         assertEquals(99, SignalLevel.NO_SIM.rarityRank)

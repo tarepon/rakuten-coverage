@@ -57,12 +57,13 @@ fun h3IndexToLatLng(h3Index: String): Pair<Double, Double> {
 /**
  * 信号レベルに応じてセルIDを返す。
  * 通常: 小数4桁 ≈ 11m グリッド（latLngToH3Index と同じ）
- * NO_SIGNAL: 0.002度 ≈ 222m グリッド（圏外モンスターはレア）
+ * NO_SIGNAL: 0.005度 ≈ 555m グリッド（圏外モンスターはレア）
+ * ※旧グリッド(0.002度)で捕獲済みのnosigレコードは主キーが異なるためそのまま残る
  */
 fun latLngToCellId(latitude: Double, longitude: Double, signalLevel: SignalLevel): String {
     return if (signalLevel == SignalLevel.NO_SIGNAL) {
-        val la = (latitude  / 0.002).roundToLong() * 0.002
-        val ln = (longitude / 0.002).roundToLong() * 0.002
+        val la = (latitude  / 0.005).roundToLong() * 0.005
+        val ln = (longitude / 0.005).roundToLong() * 0.005
         "nosig:$la,$ln"
     } else {
         latLngToH3Index(latitude, longitude)

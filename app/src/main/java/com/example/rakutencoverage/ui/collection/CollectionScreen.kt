@@ -74,7 +74,9 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
         item {
             Spacer(Modifier.height(8.dp))
             Text("💀 闇図鑑", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("圏外＝エリア拡張の伸び代を記録せよ", style = MaterialTheme.typography.bodySmall,
+            Text("圏外＝エリア拡張の伸び代を捕獲せよ", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("圏外セルは約555m四方を1セルとして数えます(捕獲でカウント)", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
         }
