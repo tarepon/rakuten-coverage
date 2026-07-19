@@ -5,6 +5,7 @@ import android.os.Build
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
+import android.util.Log
 import androidx.annotation.RequiresApi
 
 /**
@@ -22,6 +23,9 @@ import androidx.annotation.RequiresApi
  * API 30 以前は READ_PHONE_STATE が必要なため購読せず、従来のセル走査のみで判定する。
  */
 object DisplayInfoMonitor {
+
+    /** 5G判定の実機診断用ログタグ。取得方法: adb logcat -s SignalDiag */
+    private const val TAG = "SignalDiag"
 
     @Volatile private var overrideType: Int = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE
     @Volatile private var started = false
@@ -54,18 +58,24 @@ object DisplayInfoMonitor {
         val cb = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
             override fun onDisplayInfoChanged(displayInfo: TelephonyDisplayInfo) {
                 overrideType = displayInfo.overrideNetworkType
+                Log.d(TAG, "DisplayInfo変化: overrideNetworkType=${displayInfo.overrideNetworkType} " +
+                    "(0=なし 1=LTE_CA 2=LTE_ADV_PRO 3=NR_NSA 4=NR_NSA_MMWAVE 5=NR_ADVANCED) " +
+                    "isNrConnected=$isNrConnected")
             }
         }
         try {
             tm.registerTelephonyCallback(appContext.mainExecutor, cb)
             callback = cb
             started = true
+            Log.i(TAG, "DisplayInfo購読開始 (targetSdk31+のためREAD_PHONE_STATE不要)")
         } catch (e: SecurityException) {
             // 想定外に権限を要求される端末では以後も成功しないため再試行しない。
             // isNrConnected は false のまま = 従来のセル走査のみの判定で継続
             started = true
+            Log.w(TAG, "DisplayInfo購読がSecurityExceptionで拒否。セル走査のみで判定継続", e)
         } catch (e: IllegalStateException) {
             // Telephony サービス未起動など一時的な失敗。次回の ensureStarted で再試行
+            Log.w(TAG, "DisplayInfo購読が一時失敗。次回計測時に再試行", e)
         }
     }
 }

@@ -5,7 +5,11 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import android.telephony.*
+import android.util.Log
 import androidx.annotation.RequiresApi
+
+/** 5G判定の実機診断用ログタグ (DisplayInfoMonitor と共通)。取得方法: adb logcat -s SignalDiag */
+private const val DIAG_TAG = "SignalDiag"
 
 /**
  * 端末の通信状態を一括取得するデータクラス。
@@ -136,10 +140,14 @@ class NetworkInfoCollector(private val context: Context) {
         } catch (e: SecurityException) {
             emptyList()
         }
-        val index = selectMeasurementCellIndex(cells.map { it.toCandidate() })
-            ?: return NetworkSnapshot("NO_SERVICE", null, null, null)
+        val candidates = cells.map { it.toCandidate() }
+        val index = selectMeasurementCellIndex(candidates)
+        if (index == null) {
+            Log.d(DIAG_TAG, "allCellInfoが空 → NO_SERVICE (nrOverride=${DisplayInfoMonitor.isNrConnected})")
+            return NetworkSnapshot("NO_SERVICE", null, null, null)
+        }
         val carrier = tm.networkOperatorName.takeIf { it.isNotBlank() }
-        return when (val info = cells[index]) {
+        val snapshot = when (val info = cells[index]) {
             is CellInfoNr -> {
                 val identity = info.cellIdentity as CellIdentityNr
                 val signal   = info.cellSignalStrength as CellSignalStrengthNr
@@ -165,6 +173,11 @@ class NetworkInfoCollector(private val context: Context) {
             is CellInfoGsm   -> NetworkSnapshot("2G", null, null, carrier)
             else             -> NetworkSnapshot("NO_SERVICE", null, null, null)
         }
+        Log.d(DIAG_TAG, "cells=[${candidates.joinToString { c ->
+            "${c.type}${if (c.isRegistered) "*" else ""}${if (!c.hasSignal) "(信号なし)" else ""}"
+        }}] 選択=$index nrOverride=${DisplayInfoMonitor.isNrConnected} " +
+            "→ ${snapshot.networkType}・${snapshot.band ?: "?"}・${snapshot.rssi ?: "?"}dBm")
+        return snapshot
     }
 
     /** CellInfo をセル選択用の純粋データに変換する */
