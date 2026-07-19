@@ -35,6 +35,22 @@ fun isRakutenPlmn(mcc: String?, mnc: String?): Boolean =
 fun isPartnerRoamingPlmn(mcc: String?, mnc: String?): Boolean =
     mcc == "440" && mnc in setOf("50", "51", "53", "54")
 
+/** セル選定用のPLMN情報(純関数テスト用の抽象) */
+data class PlmnCell(val mcc: String?, val mnc: String?, val registered: Boolean)
+
+/**
+ * 計測対象セルのインデックスを選ぶ。優先順:
+ * 在圏中の楽天 → 楽天(非在圏含む) → 在圏中のauローミング → auローミング(非在圏含む)。
+ * DSDS端末はデータ通信SIM以外のセルを isRegistered=false で報告する機種があるため、
+ * PLMNが楽天/auなら在圏フラグが立っていなくても採用する。該当なしは null(楽天として圏外)。
+ */
+fun selectCellIndexByPlmn(cells: List<PlmnCell>): Int? {
+    val rakuten = cells.withIndex().filter { isRakutenPlmn(it.value.mcc, it.value.mnc) }
+    val partner = cells.withIndex().filter { isPartnerRoamingPlmn(it.value.mcc, it.value.mnc) }
+    return (rakuten.firstOrNull { it.value.registered } ?: rakuten.firstOrNull()
+        ?: partner.firstOrNull { it.value.registered } ?: partner.firstOrNull())?.index
+}
+
 /**
  * NR-ARFCN からバンド名を逆引きする(楽天が使用するバンドのみ)。
  * CellIdentityNr.bands はAPI 30+専用のうえ、対応端末でもNSA接続時等に空を返す
@@ -109,14 +125,15 @@ class NetworkInfoCollector(private val context: Context) {
     }
 
     /**
-     * セル一覧から計測対象セルを選ぶ。
-     * 優先順: 在圏中の楽天セル → 在圏中のauローミングセル → なし(楽天として圏外)。
+     * セル一覧から計測対象セルを選ぶ(優先順は selectCellIndexByPlmn を参照)。
      * 5G(NR)とLTEのみ対象(楽天に3G/2Gは存在しない)。
      */
     private fun selectServingCell(cellInfo: List<CellInfo>): CellInfo? {
-        val registered = cellInfo.filter { it.isRegistered && (it is CellInfoNr || it is CellInfoLte) }
-        return registered.firstOrNull { isRakutenPlmn(it.mcc(), it.mnc()) }
-            ?: registered.firstOrNull { isPartnerRoamingPlmn(it.mcc(), it.mnc()) }
+        val candidates = cellInfo.filter { it is CellInfoNr || it is CellInfoLte }
+        val index = selectCellIndexByPlmn(
+            candidates.map { PlmnCell(it.mcc(), it.mnc(), it.isRegistered) }
+        ) ?: return null
+        return candidates[index]
     }
 
     private fun CellInfo.mcc(): String? = when (this) {
@@ -204,10 +221,22 @@ class NetworkInfoCollector(private val context: Context) {
     private fun isAirplaneMode(): Boolean =
         Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1
 
-    /** SIM 状態が ABSENT / UNKNOWN なら SIM 不在とみなす */
-    private fun isNoSim(): Boolean =
-        tm.simState == TelephonyManager.SIM_STATE_ABSENT ||
-        tm.simState == TelephonyManager.SIM_STATE_UNKNOWN
+    /**
+     * 全スロットのSIMが ABSENT / UNKNOWN なら SIM 不在とみなす。
+     * 引数なしの simState はデフォルトSIMしか見ないため、DUAL SIM機で
+     * 片方のスロットだけにSIMがある構成を誤ってNO_SIM判定しないよう全スロットを走査する。
+     */
+    private fun isNoSim(): Boolean {
+        val slotCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            tm.activeModemCount
+        } else {
+            @Suppress("DEPRECATION") tm.phoneCount
+        }.coerceAtLeast(1)
+        return (0 until slotCount).all { slot ->
+            val state = tm.getSimState(slot)
+            state == TelephonyManager.SIM_STATE_ABSENT || state == TelephonyManager.SIM_STATE_UNKNOWN
+        }
+    }
 
     /**
      * API 26-28 用のネットワーク種別判定。dataNetworkType を使用

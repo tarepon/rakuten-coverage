@@ -47,6 +47,69 @@ class RakutenCellFilterTest {
         assertFalse(isPartnerRoamingPlmn("310", "50"))
     }
 
+    // ---------- セル選定の優先順位 ----------
+
+    @Test
+    fun registeredRakutenCellIsPreferred() {
+        val cells = listOf(
+            PlmnCell("440", "10", registered = true),   // docomo
+            PlmnCell("440", "11", registered = true)    // Rakuten
+        )
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun unregisteredRakutenCellIsStillSelected() {
+        // DSDS端末はデータSIM以外のセルを isRegistered=false で報告する機種があるため、
+        // PLMNが楽天なら在圏フラグが立っていなくても採用する
+        val cells = listOf(
+            PlmnCell("440", "10", registered = true),   // docomo (データSIM側)
+            PlmnCell("440", "11", registered = false)   // Rakuten (非データSIM側)
+        )
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun registeredRakutenBeatsUnregisteredRakuten() {
+        val cells = listOf(
+            PlmnCell("440", "11", registered = false),
+            PlmnCell("440", "11", registered = true)
+        )
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun rakutenBeatsPartnerRoaming() {
+        val cells = listOf(
+            PlmnCell("440", "50", registered = true),   // au roaming
+            PlmnCell("440", "11", registered = false)   // Rakuten
+        )
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun partnerRoamingIsSelectedWhenNoRakuten() {
+        val cells = listOf(
+            PlmnCell("440", "10", registered = true),   // docomo
+            PlmnCell("440", "50", registered = true)    // au roaming
+        )
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun docomoOnlyReturnsNull() {
+        val cells = listOf(
+            PlmnCell("440", "10", registered = true),
+            PlmnCell("440", "10", registered = false)
+        )
+        assertNull(selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun emptyListReturnsNull() {
+        assertNull(selectCellIndexByPlmn(emptyList()))
+    }
+
     // ---------- NR-ARFCN → バンド ----------
 
     @Test
