@@ -160,7 +160,44 @@ class NetworkInfoCollector(private val context: Context) {
                 }
             }
         }
-        return fresh ?: runCatching { tm.allCellInfo }.getOrNull() ?: emptyList()
+        // 空リストは「更新は成功したが中身なし」を意味する機種があるため、キャッシュにフォールバックする
+        return fresh?.takeIf { it.isNotEmpty() }
+            ?: runCatching { tm.allCellInfo }.getOrNull()
+            ?: emptyList()
+    }
+
+    /**
+     * 診断用: 現在のセル一覧を人間可読の複数行テキストで返す。
+     * DUAL SIM機で楽天セルが見えているか(PLMN・在圏フラグ・ARFCN)を実機で確認するためのもの。
+     */
+    @SuppressLint("MissingPermission")
+    suspend fun debugCellDump(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return "API ${Build.VERSION.SDK_INT}: セル情報の取得に非対応"
+        }
+        val cells = freshCellInfo()
+        val sb = StringBuilder()
+        sb.appendLine("simState=${tm.simState} dataOperator=${tm.networkOperatorName}")
+        sb.appendLine("cells=${cells.size}")
+        cells.forEachIndexed { i, c ->
+            val line = when (c) {
+                is CellInfoNr -> {
+                    val id = c.cellIdentity as CellIdentityNr
+                    val bands = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) id.bands.toList().toString() else "-"
+                    "NR  reg=${c.isRegistered} plmn=${id.mccString}-${id.mncString} nrarfcn=${id.nrarfcn} bands=$bands"
+                }
+                is CellInfoLte -> {
+                    val id = c.cellIdentity as CellIdentityLte
+                    val bands = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) id.bands.toList().toString() else "-"
+                    "LTE reg=${c.isRegistered} plmn=${id.mccString}-${id.mncString} earfcn=${id.earfcn} bands=$bands"
+                }
+                is CellInfoWcdma -> "3G  reg=${c.isRegistered}"
+                is CellInfoGsm   -> "2G  reg=${c.isRegistered}"
+                else             -> c.javaClass.simpleName
+            }
+            sb.appendLine("[$i] $line")
+        }
+        return sb.toString().trimEnd()
     }
 
     /** Settings.Global.AIRPLANE_MODE_ON が 1 なら機内モード */

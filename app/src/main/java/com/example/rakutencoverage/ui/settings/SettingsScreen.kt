@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +22,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.AppDatabase
 import com.example.rakutencoverage.data.SettingsStore
+import com.example.rakutencoverage.measurement.NetworkInfoCollector
 import com.example.rakutencoverage.ui.map.MapViewModel
 import com.example.rakutencoverage.ui.map.MeasureInterval
 import com.example.rakutencoverage.util.BackupManager
@@ -147,6 +149,36 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
                         if (enabled) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
+                }
+            )
+        }
+
+        var diagText by remember { mutableStateOf<String?>(null) }
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    diagText = withContext(Dispatchers.IO) {
+                        runCatching { NetworkInfoCollector(context).debugCellDump() }
+                            .getOrElse { "取得失敗: ${it.message}" }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("📶 セル情報の診断") }
+
+        diagText?.let { text ->
+            AlertDialog(
+                onDismissRequest = { diagText = null },
+                title = { Text("セル情報の診断") },
+                text = {
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { diagText = null }) { Text("閉じる") }
                 }
             )
         }
