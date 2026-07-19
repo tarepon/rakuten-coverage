@@ -10,6 +10,12 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 
 /**
+ * 5G判定の実機診断用ログタグ (NetworkInfoCollector と共通)。取得方法: adb logcat -s SignalDiag
+ * 2クラスのログを1つのタグで一括取得するため、定義はここ1箇所に集約する。
+ */
+internal const val DIAG_TAG = "SignalDiag"
+
+/**
  * TelephonyDisplayInfo (ステータスバーの 5G アイコンと同じ情報源) を購読し、
  * NSA 5G 接続状態を保持するプロセス寿命のシングルトン。
  *
@@ -29,9 +35,6 @@ import androidx.annotation.RequiresApi
  */
 object DisplayInfoMonitor {
 
-    /** 5G判定の実機診断用ログタグ。取得方法: adb logcat -s SignalDiag */
-    private const val TAG = "SignalDiag"
-
     @Volatile private var overrideType: Int = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE
     @Volatile private var permanentlyFailed = false
 
@@ -40,6 +43,14 @@ object DisplayInfoMonitor {
 
     /** 購読に使った TelephonyManager (解除に必要)。実型は TelephonyManager */
     private var registeredTm: TelephonyManager? = null
+
+    /**
+     * ロック外の高速パス用: 現在購読中の TelephonyManager 参照。
+     * ensureStarted は計測ごとに(メインスレッドのVMとサービスの両方から)呼ばれるため、
+     * 定常状態(同じTMで購読済み)ではロックを取らずに抜けられるようにする。
+     * cachedRakutenTm がキャッシュされる限り呼び出し側の targetTm は同一インスタンスになる。
+     */
+    @Volatile private var fastPathTm: TelephonyManager? = null
 
     /** 登録済みコールバック (GC防止の強参照兼解除用)。実型は TelephonyCallback (API 31+) */
     private var callback: Any? = null
@@ -58,6 +69,7 @@ object DisplayInfoMonitor {
      */
     fun ensureStarted(context: Context, targetTm: TelephonyManager) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || permanentlyFailed) return
+        if (targetTm === fastPathTm) return  // 定常状態: 同じTMで購読済み(ロック不要)
         synchronized(this) {
             ensureStartedLocked(context.applicationContext, targetTm)
         }
@@ -67,7 +79,11 @@ object DisplayInfoMonitor {
     private fun ensureStartedLocked(appContext: Context, targetTm: TelephonyManager) {
         val subId = runCatching { targetTm.subscriptionId }
             .getOrDefault(SubscriptionManager.INVALID_SUBSCRIPTION_ID)
-        if (callback != null && subId == registeredSubId) return
+        if (callback != null && subId == registeredSubId) {
+            // 同じsubIdの別TMインスタンス(キャッシュ再生成等)。購読は有効なので参照だけ更新
+            fastPathTm = targetTm
+            return
+        }
 
         // 購読先の張り替え: 旧購読を解除し、判定値も一旦リセット (旧SIMの状態を引きずらない)
         (callback as? TelephonyCallback)?.let { old ->
@@ -75,13 +91,14 @@ object DisplayInfoMonitor {
             callback = null
             registeredTm = null
             registeredSubId = null
+            fastPathTm = null
             overrideType = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE
         }
 
         val cb = object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
             override fun onDisplayInfoChanged(displayInfo: TelephonyDisplayInfo) {
                 overrideType = displayInfo.overrideNetworkType
-                Log.d(TAG, "DisplayInfo変化: overrideNetworkType=${displayInfo.overrideNetworkType} " +
+                Log.d(DIAG_TAG, "DisplayInfo変化: overrideNetworkType=${displayInfo.overrideNetworkType} " +
                     "(0=なし 1=LTE_CA 2=LTE_ADV_PRO 3=NR_NSA 4=NR_NSA_MMWAVE 5=NR_ADVANCED) " +
                     "isNrConnected=$isNrConnected")
             }
@@ -91,15 +108,16 @@ object DisplayInfoMonitor {
             callback = cb
             registeredTm = targetTm
             registeredSubId = subId
-            Log.i(TAG, "DisplayInfo購読開始 subId=$subId (targetSdk31+のためREAD_PHONE_STATE不要)")
+            fastPathTm = targetTm
+            Log.i(DIAG_TAG, "DisplayInfo購読開始 subId=$subId (targetSdk31+のためREAD_PHONE_STATE不要)")
         } catch (e: SecurityException) {
             // 想定外に権限を要求される端末では以後も成功しないため再試行しない。
             // isNrConnected は false のまま = 従来のセル走査のみの判定で継続
             permanentlyFailed = true
-            Log.w(TAG, "DisplayInfo購読がSecurityExceptionで拒否。セル走査のみで判定継続", e)
+            Log.w(DIAG_TAG, "DisplayInfo購読がSecurityExceptionで拒否。セル走査のみで判定継続", e)
         } catch (e: IllegalStateException) {
             // Telephony サービス未起動など一時的な失敗。次回の ensureStarted で再試行
-            Log.w(TAG, "DisplayInfo購読が一時失敗。次回計測時に再試行", e)
+            Log.w(DIAG_TAG, "DisplayInfo購読が一時失敗。次回計測時に再試行", e)
         }
     }
 }

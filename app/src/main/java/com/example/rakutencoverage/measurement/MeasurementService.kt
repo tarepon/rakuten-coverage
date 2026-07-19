@@ -124,10 +124,11 @@ class MeasurementService : Service() {
         val last = lastMeasurement
         if (last != null && isDuplicate(result, last)) return
 
-        // 機内モード・SIMなしは前面表示のみ更新し、計測データとしてはDBに保存しない
+        // 機内モード・SIMなしは前面表示と通知のみ更新し、計測データとしてはDBに保存しない
         if (result.signalLevel == SignalLevel.AIRPLANE_MODE || result.signalLevel == SignalLevel.NO_SIM) {
             lastMeasurement = result
             MeasurementController.latestMeasurement.value = result
+            updateNotification(result)
             return
         }
 
@@ -135,9 +136,8 @@ class MeasurementService : Service() {
         lastMeasurement = result
         MeasurementController.latestMeasurement.value = result
 
-        val isValidForStamp = result.signalLevel != SignalLevel.AIRPLANE_MODE &&
-                               result.signalLevel != SignalLevel.NO_SIM
-        if (isValidForStamp) ci?.spot?.let { spot ->
+        // 機内モード・SIMなしは上でreturn済みのため、ここに来た計測はすべてスタンプ有効
+        ci?.spot?.let { spot ->
             stampDao.achieve(
                 StampRecord(
                     spotId     = spot.id,

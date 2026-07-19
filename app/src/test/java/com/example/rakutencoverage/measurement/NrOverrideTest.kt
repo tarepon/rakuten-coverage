@@ -41,4 +41,22 @@ class NrOverrideTest {
         assertEquals("3G" to null, applyNrOverride("3G", null, nrConnected = true))
         assertEquals("NO_SERVICE" to null, applyNrOverride("NO_SERVICE", null, nrConnected = true))
     }
+
+    @Test
+    fun `auローミングセル選択時は昇格しない`() {
+        // DisplayInfoのNR状態が古い値のままauエリアに入った場合に、
+        // 楽天5Gが無い場所を5Gとして記録しないためのPLMNゲート
+        assertEquals(
+            "LTE" to "Band 18",
+            applyNrOverride("LTE", "Band 18", nrConnected = true, isRakutenCell = false)
+        )
+    }
+
+    @Test
+    fun `楽天セル選択時はゲートを通過して昇格する`() {
+        assertEquals(
+            "5G" to null,
+            applyNrOverride("LTE", "Band 3", nrConnected = true, isRakutenCell = true)
+        )
+    }
 }

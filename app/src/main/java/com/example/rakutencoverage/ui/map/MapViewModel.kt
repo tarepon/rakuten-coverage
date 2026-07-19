@@ -28,6 +28,7 @@ import com.example.rakutencoverage.measurement.NetworkInfoCollector
 import com.example.rakutencoverage.ui.character.CharacterState
 import com.example.rakutencoverage.ui.character.idleCharacterState
 import com.example.rakutencoverage.ui.character.toCharacterState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 
 /**
@@ -212,6 +214,12 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun observeLatestMeasurement() {
         viewModelScope.launch {
+            // 購読開始時点で既存値がなければ「同期すべき過去の計測」は存在しない。
+            // 初回同期スロットを消費済みにしておかないと、コールドスタート時に
+            // セッション最初の本物の計測が同期扱いで握りつぶされ発見演出が出ない
+            if (MeasurementController.latestMeasurement.value == null) {
+                hasSyncedInitialMeasurement = true
+            }
             MeasurementController.latestMeasurement.collect { result ->
                 if (result != null) onNewMeasurement(result)
             }
@@ -220,24 +228,30 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * GPS を使わずに電波種別だけを 3s ごとチェックし、キャラ表示を更新する。
-     * バッテリーへの影響は軽微 (TelephonyManager API のみ)。
-     * バックグラウンド計測ループ (MeasurementService) とは独立して常時動作する。
+     * 計測サービス稼働中はサービスの計測結果 (onNewMeasurement 経由) がキャラを
+     * 更新するため、このループは collect() を呼ばずスキップする —
+     * collect() は requestCellInfoUpdate (モデムスキャン) や楽天SIM探索を伴い、
+     * 二重実行はバッテリー・メインスレッド負荷の無駄になるため。
+     * collect() 自体も Dispatchers.Default で実行し、SIM探索の binder IPC が
+     * メインスレッドを塞がないようにする。
      */
     private fun startDisplayUpdates() {
         displayJob?.cancel()
         displayJob = viewModelScope.launch {
             while (true) {
-                val snap  = networkCollector.collect()
-                val level = when (snap.networkType) {
-                    "AIRPLANE_MODE"          -> SignalLevel.AIRPLANE_MODE
-                    "NO_SIM"                 -> SignalLevel.NO_SIM
-                    "NO_SERVICE", "UNKNOWN"  -> SignalLevel.NO_SIGNAL
-                    "5G"                     -> SignalLevel.FIVE_G
-                    "LTE"                    -> SignalLevel.LTE
-                    else                     -> SignalLevel.WEAK
-                }
-                if (level != _character.value.level) {
-                    _character.value = level.toCharacterState()
+                if (!MeasurementController.isRunning.value) {
+                    val snap  = withContext(Dispatchers.Default) { networkCollector.collect() }
+                    val level = when (snap.networkType) {
+                        "AIRPLANE_MODE"          -> SignalLevel.AIRPLANE_MODE
+                        "NO_SIM"                 -> SignalLevel.NO_SIM
+                        "NO_SERVICE", "UNKNOWN"  -> SignalLevel.NO_SIGNAL
+                        "5G"                     -> SignalLevel.FIVE_G
+                        "LTE"                    -> SignalLevel.LTE
+                        else                     -> SignalLevel.WEAK
+                    }
+                    if (level != _character.value.level) {
+                        _character.value = level.toCharacterState()
+                    }
                 }
                 delay(3000L)
             }

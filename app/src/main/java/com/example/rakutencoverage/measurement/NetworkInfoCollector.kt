@@ -3,6 +3,7 @@ package com.example.rakutencoverage.measurement
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import android.telephony.*
 import android.util.Log
@@ -10,9 +11,6 @@ import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-
-/** 5G判定の実機診断用ログタグ (DisplayInfoMonitor と共通)。取得方法: adb logcat -s SignalDiag */
-private const val DIAG_TAG = "SignalDiag"
 
 /**
  * 端末の通信状態を一括取得するデータクラス。
@@ -70,6 +68,9 @@ fun selectCellIndexByPlmn(cells: List<PlmnCell>): Int? {
     return (rakuten.firstOrNull { it.value.isNr && it.value.registered }
         ?: rakuten.firstOrNull { it.value.isNr && it.value.hasSignal }
         ?: rakuten.firstOrNull { it.value.registered }
+        // 最終フォールバックは非NRを優先: 信号強度の取れない孤立NR(優先順2で漏れたもの)を
+        // 選ぶと RSSI=null の 5G レコードが生まれるため、LTE があればそちらを使う
+        ?: rakuten.firstOrNull { !it.value.isNr }
         ?: rakuten.firstOrNull()
         ?: partner.firstOrNull { it.value.registered }
         ?: partner.firstOrNull())?.index
@@ -82,9 +83,19 @@ fun selectCellIndexByPlmn(cells: List<PlmnCell>): Int? {
  * その際バンドは LTE アンカーのもの (NR バンドではない) のため null に落とす
  * ("Band 28" アンカーが 5G n28 プラチナと誤判定されるのを防ぐ。resolveSignalLevel 参照)。
  * LTE 以外 (すでに 5G 判定済み・圏外等) はそのまま返す。
+ *
+ * isRakutenCell ゲート: 昇格は選択セルが楽天自社網 (440-11) のときに限る。
+ * auローミングセルしか見えない場所で DisplayInfo の NR 状態 (直前の楽天5G圏の残存や
+ * コールバック遅延で古い値が残りうる) を適用すると、楽天5Gが無い場所を
+ * 5G として記録してしまうため。
  */
-fun applyNrOverride(networkType: String, band: String?, nrConnected: Boolean): Pair<String, String?> =
-    if (nrConnected && networkType == "LTE") "5G" to null else networkType to band
+fun applyNrOverride(
+    networkType: String,
+    band: String?,
+    nrConnected: Boolean,
+    isRakutenCell: Boolean = true
+): Pair<String, String?> =
+    if (nrConnected && isRakutenCell && networkType == "LTE") "5G" to null else networkType to band
 
 /**
  * NR-ARFCN からバンド名を逆引きする(楽天が使用するバンドのみ)。
@@ -131,18 +142,24 @@ class NetworkInfoCollector(private val context: Context) {
 
         /** subId総当たりの上限(subIdはSIM挿入ごとに1から連番で払い出される) */
         const val MAX_PROBE_SUB_ID = 20
+
+        /** 楽天SIM探索ミスのネガティブキャッシュ有効期間 */
+        const val PROBE_MISS_TTL_MS = 60_000L
     }
 
     private val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
-    init {
-        // 初回計測までに TelephonyDisplayInfo の初期コールバックが届くよう早めに購読開始。
-        // 楽天SIM専用TMの特定は collect() 側で行い、そこで必要なら購読先を切り替える
-        DisplayInfoMonitor.ensureStarted(context, tm)
-    }
+    // 注意: ここで DisplayInfoMonitor.ensureStarted は呼ばない。
+    // デフォルトTMで先に購読すると、DSDS機では初回 collect() で楽天SIM側への
+    // 張り替えが必ず発生し、また設定画面の診断用に生成される一時的なコレクタが
+    // プロセス共有の購読先を書き換えてしまうため、購読は collect() 内で
+    // 楽天SIM特定後の targetTm に対してのみ行う。
 
     /** 楽天SIMサブスクリプション専用のTelephonyManager(見つかればキャッシュ) */
     private var cachedRakutenTm: TelephonyManager? = null
+
+    /** 直近の探索で楽天SIMが見つからなかった時刻 (SystemClock.elapsedRealtime)。0=未探索 */
+    private var lastProbeMissAt: Long = 0L
 
     /**
      * 楽天SIMのサブスクリプションに紐づくTelephonyManagerを探す。
@@ -150,11 +167,19 @@ class NetworkInfoCollector(private val context: Context) {
      * 返さない機種があるため、楽天SIM専用インスタンスでセル情報を取る必要がある。
      * simOperator(SIMのPLMN)は権限不要で読めるため、デフォルト系subId＋総当たりで特定する。
      * 見つからなければ null(楽天SIM未挿入、またはシングルSIMでデフォルトが楽天でない)。
+     *
+     * ネガティブキャッシュ: 総当たりは subId ごとに simOperator の binder IPC を伴い、
+     * 計測ループ(数秒間隔)で毎回やり直すと楽天SIM非搭載時に恒常的な負荷になるため、
+     * ミス結果を PROBE_MISS_TTL_MS の間キャッシュする (SIM挿入はTTL経過後に検出される)。
      */
     private fun rakutenTelephonyManager(): TelephonyManager? {
         cachedRakutenTm?.let { cached ->
             if (runCatching { cached.simOperator }.getOrNull() == RAKUTEN_SIM_OPERATOR) return cached
             cachedRakutenTm = null  // SIM入れ替え等で無効化された場合は再探索
+        }
+        if (lastProbeMissAt != 0L &&
+            SystemClock.elapsedRealtime() - lastProbeMissAt < PROBE_MISS_TTL_MS) {
+            return null
         }
         val candidates = buildList {
             add(SubscriptionManager.getDefaultDataSubscriptionId())
@@ -167,9 +192,11 @@ class NetworkInfoCollector(private val context: Context) {
             val candidate = runCatching { tm.createForSubscriptionId(subId) }.getOrNull() ?: continue
             if (runCatching { candidate.simOperator }.getOrNull() == RAKUTEN_SIM_OPERATOR) {
                 cachedRakutenTm = candidate
+                lastProbeMissAt = 0L
                 return candidate
             }
         }
+        lastProbeMissAt = SystemClock.elapsedRealtime()
         return null
     }
 
@@ -219,8 +246,14 @@ class NetworkInfoCollector(private val context: Context) {
         val rawType = if (cell is CellInfoNr) "5G" else "LTE"
         val (rawBand, rssi, cellId) = resolveBandRssiAndCellId(cell)
         // NRセルがリストに現れない端末のNSA 5GはTelephonyDisplayInfoで補正
-        // (RSSI・セルIDは実測可能なLTEアンカーのものをそのまま記録する)
-        val (networkType, band) = applyNrOverride(rawType, rawBand, DisplayInfoMonitor.isNrConnected)
+        // (RSSI・セルIDは実測可能なLTEアンカーのものをそのまま記録する)。
+        // auローミングセル選択時は昇格しない(applyNrOverrideのisRakutenCellゲート参照)
+        val selected = plmnCells[index]
+        val (networkType, band) = applyNrOverride(
+            rawType, rawBand,
+            nrConnected = DisplayInfoMonitor.isNrConnected,
+            isRakutenCell = isRakutenPlmn(selected.mcc, selected.mnc)
+        )
         Log.d(DIAG_TAG, "cells=[${plmnCells.summary()}] 選択=$index " +
             "nrOverride=${DisplayInfoMonitor.isNrConnected} → $networkType・${band ?: "?"}・${rssi ?: "?"}dBm")
         return NetworkSnapshot(networkType, band, rssi, "Rakuten", isValidMeasurement = true, cellId = cellId)
@@ -236,8 +269,8 @@ class NetworkInfoCollector(private val context: Context) {
 
     /** NR/LTEセルの信号強度が取得可能か (それ以外のセル種別は選定対象外のため false で足りる) */
     private fun CellInfo.hasValidSignal(): Boolean = when (this) {
-        is CellInfoNr  -> cellSignalStrength.dbm != CellInfo.UNAVAILABLE
-        is CellInfoLte -> cellSignalStrength.dbm != CellInfo.UNAVAILABLE
+        is CellInfoNr  -> cellSignalStrength.dbm.takeIfAvailable() != null
+        is CellInfoLte -> cellSignalStrength.dbm.takeIfAvailable() != null
         else           -> false
     }
 

@@ -28,7 +28,7 @@ enum class MonsterCategory(
         defenseRange = 70..100
     ),
     PHANTOM(
-        displayName = "幻の5Gミリ波モンスター",
+        displayName = "幻のプラチナ5Gモンスター",
         rarityLabel = "★★★★★ 幻",
         starCount = 5,
         emoji = "🤩",

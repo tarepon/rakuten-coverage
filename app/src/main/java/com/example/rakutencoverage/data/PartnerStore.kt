@@ -7,7 +7,7 @@ import android.content.Context
  * denpamon-go の Wallet.partnerKey に相当。SharedPreferences で保持する。
  */
 object PartnerStore {
-    private const val PREF = "game_prefs"
+    private const val PREF = GAME_PREFS_FILE
     private const val KEY_PARTNER = "partner_cell_id"
 
     fun get(context: Context): String? =

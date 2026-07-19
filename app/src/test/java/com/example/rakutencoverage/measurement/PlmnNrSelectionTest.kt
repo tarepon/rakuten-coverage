@@ -76,4 +76,18 @@ class PlmnNrSelectionTest {
     fun `楽天もauも無ければnull`() {
         assertNull(selectCellIndexByPlmn(listOf(PlmnCell("440", "10", registered = true, isNr = true))))
     }
+
+    @Test
+    fun `最終フォールバックは信号なしNRより非在圏LTEを優先する`() {
+        // 在圏セルなし+信号なしNRが先頭でも、RSSI記録可能なLTE側を選ぶ
+        val cells = listOf(rakutenNr(registered = false, signal = false), rakutenLte(registered = false))
+        assertEquals(1, selectCellIndexByPlmn(cells))
+    }
+
+    @Test
+    fun `信号なしNRしか無ければ最終手段としてそれを選ぶ`() {
+        // NO_SERVICE扱いにするよりは楽天セル在圏の記録を残す(従来動作の維持)
+        val cells = listOf(rakutenNr(registered = false, signal = false))
+        assertEquals(0, selectCellIndexByPlmn(cells))
+    }
 }
