@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.telephony.*
 import android.util.Log
+import androidx.annotation.RequiresApi
 import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -265,21 +266,25 @@ class NetworkInfoCollector(private val context: Context) {
             (if (c.registered) "*" else "") + (if (!c.hasSignal) "(信号なし)" else "")
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun CellInfo.isNrCell(): Boolean = this is CellInfoNr
 
     /** NR/LTEセルの信号強度が取得可能か (それ以外のセル種別は選定対象外のため false で足りる) */
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun CellInfo.hasValidSignal(): Boolean = when (this) {
         is CellInfoNr  -> cellSignalStrength.dbm.takeIfAvailable() != null
         is CellInfoLte -> cellSignalStrength.dbm.takeIfAvailable() != null
         else           -> false
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun CellInfo.mcc(): String? = when (this) {
         is CellInfoNr  -> (cellIdentity as CellIdentityNr).mccString
         is CellInfoLte -> (cellIdentity as CellIdentityLte).mccString
         else           -> null
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun CellInfo.mnc(): String? = when (this) {
         is CellInfoNr  -> (cellIdentity as CellIdentityNr).mncString
         is CellInfoLte -> (cellIdentity as CellIdentityLte).mncString
@@ -292,6 +297,7 @@ class NetworkInfoCollector(private val context: Context) {
      * getAllCellInfo (キャッシュ) にフォールバックする。API 29 未満は空リスト。
      */
     @SuppressLint("MissingPermission")
+    @RequiresApi(Build.VERSION_CODES.Q)
     private suspend fun freshCellInfo(targetTm: TelephonyManager): List<CellInfo> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyList()
 
@@ -407,6 +413,7 @@ class NetworkInfoCollector(private val context: Context) {
      * (NSA接続等で bands が空を返す機種・API 29 端末への対応)。
      * @return Triple(バンド名, RSSI dBm, セルID)
      */
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun resolveBandRssiAndCellId(info: CellInfo): Triple<String?, Int?, String?> {
         return when (info) {
             is CellInfoNr -> {
