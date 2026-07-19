@@ -2,6 +2,7 @@ package com.example.rakutencoverage.ui.settings
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -347,6 +348,81 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
         resultMessage?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        // ---------- アプリについて ----------
+        Text(
+            "アプリについて",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        val versionName = remember {
+            runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            }.getOrNull() ?: "不明"
+        }
+        Text(
+            "最強プラチナハンター v$versionName",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            "作者: tarepon",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "本アプリは楽天モバイル株式会社とは無関係の非公式アプリです。" +
+                    "表示される計測値・エリア表示は個人の実測に基づく目安であり、" +
+                    "実際の通信品質・サービスエリアを保証するものではありません。",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
+
+        var showLicenses by remember { mutableStateOf(false) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)))
+                    }
+                },
+                modifier = Modifier.weight(1f)
+            ) { Text("プライバシーポリシー", maxLines = 1) }
+            OutlinedButton(
+                onClick = { showLicenses = true },
+                modifier = Modifier.weight(1f)
+            ) { Text("ライセンス", maxLines = 1) }
+        }
+
+        if (showLicenses) {
+            AlertDialog(
+                onDismissRequest = { showLicenses = false },
+                title = { Text("オープンソースライセンス") },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        Text(OSS_LICENSES_TEXT, style = MaterialTheme.typography.bodySmall)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showLicenses = false }) { Text("閉じる") }
+                }
+            )
+        }
     }
 
     if (showBackupNotice) {
@@ -507,3 +583,25 @@ private fun IntervalSelector(selected: MeasureInterval, onSelect: (MeasureInterv
         }
     }
 }
+
+private const val PRIVACY_POLICY_URL =
+    "https://github.com/tarepon/platinum-hunter/blob/main/PRIVACY_POLICY.md"
+
+private val OSS_LICENSES_TEXT = """
+本アプリは以下のオープンソースソフトウェアを使用しています。
+
+■ Apache License 2.0
+・AndroidX (Core KTX / Lifecycle / Activity Compose / Jetpack Compose / Navigation / Room / Fragment)
+・osmdroid
+・Kotlin / kotlinx.coroutines
+
+ライセンス全文:
+https://www.apache.org/licenses/LICENSE-2.0
+
+■ 地図データ
+© OpenStreetMap contributors (ODbL)
+https://www.openstreetmap.org/copyright
+
+■ その他
+本アプリは位置情報の取得に Google Play 開発者サービスを使用しています。
+""".trimIndent()
