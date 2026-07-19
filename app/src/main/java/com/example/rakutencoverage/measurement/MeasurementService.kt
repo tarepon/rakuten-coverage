@@ -124,6 +124,13 @@ class MeasurementService : Service() {
         val last = lastMeasurement
         if (last != null && isDuplicate(result, last)) return
 
+        // 機内モード・SIMなしは前面表示のみ更新し、計測データとしてはDBに保存しない
+        if (result.signalLevel == SignalLevel.AIRPLANE_MODE || result.signalLevel == SignalLevel.NO_SIM) {
+            lastMeasurement = result
+            MeasurementController.latestMeasurement.value = result
+            return
+        }
+
         measurementDao.insert(result)
         lastMeasurement = result
         MeasurementController.latestMeasurement.value = result

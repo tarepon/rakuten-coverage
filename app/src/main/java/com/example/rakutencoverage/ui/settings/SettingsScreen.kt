@@ -40,6 +40,8 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
     var resultMessage by remember { mutableStateOf<String?>(null) }
     var showClearDialog by remember { mutableStateOf(false) }
     var showBackupNotice by remember { mutableStateOf(false) }
+    var showCleanDialog by remember { mutableStateOf(false) }
+    var nonRakutenCount by remember { mutableStateOf(0) }
 
     // バックアップ保存先の選択（SAF）。選択後にJSONを書き込む
     val backupLauncher = rememberLauncherForActivityResult(
@@ -284,6 +286,24 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
 
         OutlinedButton(
             enabled = !busy,
+            onClick = {
+                scope.launch {
+                    val count = withContext(Dispatchers.IO) {
+                        AppDatabase.getInstance(context).measurementDao().countNonRakuten()
+                    }
+                    if (count == 0) {
+                        resultMessage = "✅ 楽天回線以外の計測はありません"
+                    } else {
+                        nonRakutenCount = count
+                        showCleanDialog = true
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("🧹 楽天回線以外の計測を削除") }
+
+        OutlinedButton(
+            enabled = !busy,
             onClick = { showClearDialog = true },
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.error
@@ -317,6 +337,40 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
             },
             dismissButton = {
                 TextButton(onClick = { showBackupNotice = false }) { Text("キャンセル") }
+            }
+        )
+    }
+
+    if (showCleanDialog) {
+        AlertDialog(
+            onDismissRequest = { showCleanDialog = false },
+            icon = { Text("🧹", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("楽天回線以外の計測を削除") },
+            text = {
+                Text(
+                    "対象は ${nonRakutenCount} 件です。\n" +
+                        "DUAL SIM運用時に誤って記録された他社SIM(ドコモ等)の計測と、" +
+                        "機内モード・SIMなしのレコードを削除します。\n" +
+                        "楽天回線(auローミング含む)と圏外の記録は残ります。"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCleanDialog = false
+                    scope.launch {
+                        busy = true
+                        resultMessage = runCatching {
+                            val deleted = withContext(Dispatchers.IO) {
+                                AppDatabase.getInstance(context).measurementDao().deleteNonRakuten()
+                            }
+                            "✅ 楽天回線以外の計測 ${deleted} 件を削除しました"
+                        }.getOrElse { "❌ 削除に失敗: ${it.message}" }
+                        busy = false
+                    }
+                }) { Text("削除する") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCleanDialog = false }) { Text("キャンセル") }
             }
         )
     }

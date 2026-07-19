@@ -27,9 +27,42 @@ data class NetworkSnapshot(
     val cellId: String? = null
 )
 
+/** 楽天モバイル自社網のPLMN (MCC 440 / MNC 11) か */
+fun isRakutenPlmn(mcc: String?, mnc: String?): Boolean =
+    mcc == "440" && mnc == "11"
+
+/** 楽天のパートナーローミング(KDDI/au)のPLMNか。ドコモSIMはauに在圏しないため誤混入しない */
+fun isPartnerRoamingPlmn(mcc: String?, mnc: String?): Boolean =
+    mcc == "440" && mnc in setOf("50", "51", "53", "54")
+
+/**
+ * NR-ARFCN からバンド名を逆引きする(楽天が使用するバンドのみ)。
+ * CellIdentityNr.bands はAPI 30+専用のうえ、対応端末でもNSA接続時等に空を返す
+ * 機種が多いため、周波数チャネル番号からのフォールバックとして使う。
+ */
+fun nrArfcnToBand(arfcn: Int): String? = when (arfcn) {
+    in 620000..680000 -> "n77"   // 3.3-4.2GHz (Sub6)
+    in 151600..160600 -> "n28"   // 700MHz (プラチナ)
+    else              -> null
+}
+
+/**
+ * EARFCN(LTE) からバンド名を逆引きする(楽天自社網＋auローミング帯のみ)。
+ * ドコモ専用帯(Band 1/19/21等)は意図的に対象外(nullを返す)。
+ */
+fun earfcnToBand(earfcn: Int): String? = when (earfcn) {
+    in 1200..1949 -> "Band 3"    // 1.7GHz (楽天メイン)
+    in 5850..5999 -> "Band 18"   // 800MHz (auローミング)
+    in 8690..9039 -> "Band 26"   // 800MHz (auローミング)
+    in 9210..9659 -> "Band 28"   // 700MHz (楽天プラチナ)
+    else          -> null
+}
+
 /**
  * TelephonyManager を使って端末の通信状態を収集するクラス。
  * 機内モード・SIM不在を優先的に検出し、それ以外はバンド・RSSI・キャリアを取得する。
+ * DUAL SIM対応: 在圏セルを楽天PLMN(440-11)＋auローミング(440-50/51/53/54)で選別し、
+ * 他社SIM(ドコモ等)のセルは計測対象から構造的に除外する。
  */
 class NetworkInfoCollector(private val context: Context) {
 
@@ -56,14 +89,46 @@ class NetworkInfoCollector(private val context: Context) {
         if (isNoSim()) {
             return NetworkSnapshot("NO_SIM", null, null, null, isValidMeasurement = false)
         }
-        val cellInfo = freshCellInfo()
-        val networkType = resolveNetworkType(cellInfo)
-        if (networkType == "NO_SERVICE") {
-            return NetworkSnapshot("NO_SERVICE", null, null, null, isValidMeasurement = true)
+        // API 26-28: セル情報が取れないため従来のデフォルトSIM基準で判定(楽天SIM単独運用前提)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            val networkType = resolveLegacyNetworkType()
+            if (networkType == "NO_SERVICE") {
+                return NetworkSnapshot("NO_SERVICE", null, null, null, isValidMeasurement = true)
+            }
+            val carrier = tm.networkOperatorName.takeIf { it.isNotBlank() }
+            return NetworkSnapshot(networkType, null, null, carrier, isValidMeasurement = true)
         }
-        val carrier = tm.networkOperatorName.takeIf { it.isNotBlank() }
-        val (band, rssi, cellId) = resolveBandRssiAndCellId(cellInfo)
-        return NetworkSnapshot(networkType, band, rssi, carrier, isValidMeasurement = true, cellId = cellId)
+
+        // API 29+: 在圏セルを楽天/auローミングPLMNで選別。他社SIM(ドコモ等)のセルは採用しない
+        val cell = selectServingCell(freshCellInfo())
+            ?: return NetworkSnapshot("NO_SERVICE", null, null, null, isValidMeasurement = true)
+
+        val networkType = if (cell is CellInfoNr) "5G" else "LTE"
+        val (band, rssi, cellId) = resolveBandRssiAndCellId(cell)
+        return NetworkSnapshot(networkType, band, rssi, "Rakuten", isValidMeasurement = true, cellId = cellId)
+    }
+
+    /**
+     * セル一覧から計測対象セルを選ぶ。
+     * 優先順: 在圏中の楽天セル → 在圏中のauローミングセル → なし(楽天として圏外)。
+     * 5G(NR)とLTEのみ対象(楽天に3G/2Gは存在しない)。
+     */
+    private fun selectServingCell(cellInfo: List<CellInfo>): CellInfo? {
+        val registered = cellInfo.filter { it.isRegistered && (it is CellInfoNr || it is CellInfoLte) }
+        return registered.firstOrNull { isRakutenPlmn(it.mcc(), it.mnc()) }
+            ?: registered.firstOrNull { isPartnerRoamingPlmn(it.mcc(), it.mnc()) }
+    }
+
+    private fun CellInfo.mcc(): String? = when (this) {
+        is CellInfoNr  -> (cellIdentity as CellIdentityNr).mccString
+        is CellInfoLte -> (cellIdentity as CellIdentityLte).mccString
+        else           -> null
+    }
+
+    private fun CellInfo.mnc(): String? = when (this) {
+        is CellInfoNr  -> (cellIdentity as CellIdentityNr).mncString
+        is CellInfoLte -> (cellIdentity as CellIdentityLte).mncString
+        else           -> null
     }
 
     /**
@@ -108,67 +173,54 @@ class NetworkInfoCollector(private val context: Context) {
         tm.simState == TelephonyManager.SIM_STATE_UNKNOWN
 
     /**
-     * ネットワーク種別を取得する。
-     * API 29+ では READ_PHONE_STATE 不要のセル情報 (freshCellInfo の結果) から種別を判定する。
-     * API 26-28 では dataNetworkType を使用（READ_PHONE_STATE が必要、maxSdkVersion=28 で宣言済み）。
+     * API 26-28 用のネットワーク種別判定。dataNetworkType を使用
+     * （READ_PHONE_STATE が必要、maxSdkVersion=28 で宣言済み）。
      * SecurityException は念のためキャッチし NO_SERVICE を返す。
      */
     @SuppressLint("MissingPermission")
-    private fun resolveNetworkType(cellInfo: List<CellInfo>): String {
-        // API 29+ はセル情報からセル種別を導出（READ_PHONE_STATE 不要）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return when (cellInfo.firstOrNull()) {
-                is CellInfoNr    -> "5G"
-                is CellInfoLte   -> "LTE"
-                is CellInfoWcdma -> "3G"
-                is CellInfoGsm   -> "2G"
-                else             -> "NO_SERVICE"
-            }
+    private fun resolveLegacyNetworkType(): String = try {
+        when (tm.dataNetworkType) {
+            TelephonyManager.NETWORK_TYPE_NR    -> "5G"
+            TelephonyManager.NETWORK_TYPE_LTE   -> "LTE"
+            TelephonyManager.NETWORK_TYPE_HSPAP,
+            TelephonyManager.NETWORK_TYPE_HSPA,
+            TelephonyManager.NETWORK_TYPE_UMTS  -> "3G"
+            TelephonyManager.NETWORK_TYPE_EDGE,
+            TelephonyManager.NETWORK_TYPE_GPRS  -> "2G"
+            else                                -> "NO_SERVICE"
         }
-        // API 26-28: dataNetworkType（READ_PHONE_STATE が必要）
-        return try {
-            when (tm.dataNetworkType) {
-                TelephonyManager.NETWORK_TYPE_NR    -> "5G"
-                TelephonyManager.NETWORK_TYPE_LTE   -> "LTE"
-                TelephonyManager.NETWORK_TYPE_HSPAP,
-                TelephonyManager.NETWORK_TYPE_HSPA,
-                TelephonyManager.NETWORK_TYPE_UMTS  -> "3G"
-                TelephonyManager.NETWORK_TYPE_EDGE,
-                TelephonyManager.NETWORK_TYPE_GPRS  -> "2G"
-                else                                -> "NO_SERVICE"
-            }
-        } catch (e: SecurityException) {
-            "NO_SERVICE"
-        }
+    } catch (e: SecurityException) {
+        "NO_SERVICE"
     }
 
     /**
-     * セル情報 (freshCellInfo の結果) から最初のセルを取得し、バンド名と RSSI を返す。
-     * Android Q (API 29) 未満はセル情報取得不可のため (null, null, null) を返す。
-     * バンド名 (CellIdentityNr/Lte.bands) は API 30 (R) 以上でのみ取得可。API 29 では null。
-     * 5G (NR) と LTE のみ対応。それ以外は (null, null)。
+     * 採用セルからバンド名・RSSI・セルIDを取得する。
+     * バンド名は CellIdentityNr/Lte.bands (API 30+) を優先し、空・未対応の場合は
+     * ARFCN(周波数チャネル番号)からの逆引き (nrArfcnToBand / earfcnToBand) にフォールバック
+     * (NSA接続等で bands が空を返す機種・API 29 端末への対応)。
      * @return Triple(バンド名, RSSI dBm, セルID)
      */
-    private fun resolveBandRssiAndCellId(cellInfo: List<CellInfo>): Triple<String?, Int?, String?> {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return Triple(null, null, null)
-
-        val info = cellInfo.firstOrNull() ?: return Triple(null, null, null)
+    private fun resolveBandRssiAndCellId(info: CellInfo): Triple<String?, Int?, String?> {
         return when (info) {
             is CellInfoNr -> {
                 val identity = info.cellIdentity as CellIdentityNr
                 val signal   = info.cellSignalStrength as CellSignalStrengthNr
-                val bandName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                val fromApi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                     identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = true) }
                 else null
+                val bandName = fromApi
+                    ?: identity.nrarfcn.takeIf { it != CellInfo.UNAVAILABLE }?.let { nrArfcnToBand(it) }
                 val cellId   = identity.nci.takeIf { it != Long.MAX_VALUE }?.toString()
                 Triple(bandName, signal.dbm.takeIfAvailable(), cellId)
             }
             is CellInfoLte -> {
                 val identity = info.cellIdentity as CellIdentityLte
                 val signal   = info.cellSignalStrength as CellSignalStrengthLte
-                val bandName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                val fromApi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                     identity.bands.firstOrNull()?.let { bandNumberToName(it, isNr = false) }
                 else null
+                val bandName = fromApi
+                    ?: identity.earfcn.takeIf { it != CellInfo.UNAVAILABLE }?.let { earfcnToBand(it) }
                 val cellId = identity.ci.takeIf { it != Int.MAX_VALUE }?.toString()
                 Triple(bandName, signal.dbm.takeIfAvailable(), cellId)
             }

@@ -107,6 +107,35 @@ private val navItems = listOf(
 
 @Composable
 fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolean> = mutableStateOf(false)) {
+    // 起動時注釈: 計測対象は楽天回線のみ(DUAL SIM対応)。「次回から表示しない」で恒久スキップ可
+    val noticeContext = androidx.compose.ui.platform.LocalContext.current
+    var showRakutenNotice by remember {
+        mutableStateOf(!SettingsStore.rakutenOnlyNoticeDismissed(noticeContext))
+    }
+    if (showRakutenNotice) {
+        AlertDialog(
+            onDismissRequest = { showRakutenNotice = false },
+            icon = { Text("📡", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("計測は楽天回線のみ") },
+            text = {
+                Text(
+                    "このアプリは楽天モバイル回線(auパートナーローミング含む)だけを計測・記録します。\n\n" +
+                        "・DUAL SIM端末では他社SIM(ドコモ等)の電波は記録されません\n" +
+                        "・楽天SIMが入っていない場合や楽天回線が掴めない場所では「圏外」として記録されます"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showRakutenNotice = false }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    SettingsStore.setRakutenOnlyNoticeDismissed(noticeContext, true)
+                    showRakutenNotice = false
+                }) { Text("次回から表示しない") }
+            }
+        )
+    }
+
     val navController = rememberNavController()
     val backstackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backstackEntry?.destination?.route
