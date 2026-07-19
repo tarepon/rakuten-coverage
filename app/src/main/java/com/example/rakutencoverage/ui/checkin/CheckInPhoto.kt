@@ -102,13 +102,16 @@ private fun decodeSampledBitmap(file: File, reqSize: Int): Bitmap? {
 }
 
 private fun decodeSampledBitmap(context: Context, uri: Uri, reqSize: Int): Bitmap? {
-    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
     val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, opts)
+    } ?: return null
     if (opts.outWidth <= 0 || opts.outHeight <= 0) return null
     opts.inSampleSize = calculateInSampleSize(opts.outWidth, opts.outHeight, reqSize, reqSize)
     opts.inJustDecodeBounds = false
-    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    return context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, opts)
+    }
 }
 
 /** Android公式ドキュメントの標準アルゴリズム(2の累乗で縮小) */
