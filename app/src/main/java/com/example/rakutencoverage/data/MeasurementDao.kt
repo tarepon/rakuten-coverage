@@ -21,10 +21,6 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     fun observeAll(): Flow<List<Measurement>>
 
-    /** 最新1件をリアルタイム監視する Flow (バックグラウンド計測サービスの結果を前面 UI に反映するために使用) */
-    @Query("SELECT * FROM measurements ORDER BY id DESC LIMIT 1")
-    fun observeLatest(): Flow<Measurement?>
-
     @Query("SELECT * FROM measurements ORDER BY id DESC")
     suspend fun getAll(): List<Measurement>
 
@@ -40,6 +36,29 @@ interface MeasurementDao {
 
     @Query("DELETE FROM measurements")
     suspend fun deleteAll()
+
+    /**
+     * 楽天回線以外の計測(DUAL SIM運用で誤記録された他社SIMのレコード等)の件数。
+     * 対象: carrierがRakuten以外の実測 / carrier不明なのにバンドがある実測 /
+     *       機内モード・SIMなしのレコード。
+     * 圏外(NO_SERVICE系: carrier・bandともnull)と正常な楽天レコードは対象外。
+     */
+    @Query("""
+        SELECT COUNT(*) FROM measurements
+        WHERE (carrier IS NOT NULL AND carrier NOT LIKE '%Rakuten%')
+           OR (carrier IS NULL AND band IS NOT NULL)
+           OR networkType IN ('AIRPLANE_MODE', 'NO_SIM')
+    """)
+    suspend fun countNonRakuten(): Int
+
+    /** countNonRakuten と同一条件で削除し、削除件数を返す */
+    @Query("""
+        DELETE FROM measurements
+        WHERE (carrier IS NOT NULL AND carrier NOT LIKE '%Rakuten%')
+           OR (carrier IS NULL AND band IS NOT NULL)
+           OR networkType IN ('AIRPLANE_MODE', 'NO_SIM')
+    """)
+    suspend fun deleteNonRakuten(): Int
 
     /** 図鑑用: cellId ごとの初回計測日時と出会った回数を返す（cellId が null のレコードは除外） */
     @Query("""

@@ -8,7 +8,6 @@ class NotificationDisplayTest {
 
     @Test
     fun `platinum-class signal levels map to PLATINUM icon`() {
-        assertEquals(StatusIconCategory.PLATINUM, statusIconCategory(SignalLevel.MILLIMETER_WAVE))
         assertEquals(StatusIconCategory.PLATINUM, statusIconCategory(SignalLevel.PLATINUM_5G))
         assertEquals(StatusIconCategory.PLATINUM, statusIconCategory(SignalLevel.PLATINUM))
     }

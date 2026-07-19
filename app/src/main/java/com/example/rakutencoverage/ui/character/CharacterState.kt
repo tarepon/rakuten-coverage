@@ -9,11 +9,6 @@ data class CharacterState(
 )
 
 private val messages = mapOf(
-    SignalLevel.MILLIMETER_WAVE to listOf(
-        "ミリ波！！これは伝説級の電波だ！！！",
-        "n257…！！幻のミリ波を捕まえた！！",
-        "これがミリ波の力…！速すぎてこわい！！"
-    ),
     SignalLevel.PLATINUM_5G to listOf(
         "プラチナ5G！！楽天最高〜！！！",
         "これがプラチナ×5Gのチカラ…！！",
@@ -59,7 +54,6 @@ private val messages = mapOf(
 fun SignalLevel.toCharacterState(): CharacterState {
     val msg = messages[this]?.random() ?: "…"
     val emoji = when (this) {
-        SignalLevel.MILLIMETER_WAVE -> "👑"
         SignalLevel.PLATINUM_5G -> "🤩"
         SignalLevel.FIVE_G      -> "😆"
         SignalLevel.PLATINUM    -> "😊"

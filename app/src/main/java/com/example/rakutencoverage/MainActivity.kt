@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,10 +29,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
 import com.example.rakutencoverage.ui.checkin.CheckInScreen
 import com.example.rakutencoverage.ui.collection.CollectionScreen
-import com.example.rakutencoverage.ui.export.ExportScreen
+import com.example.rakutencoverage.ui.settings.SettingsScreen
 import com.example.rakutencoverage.ui.history.HistoryScreen
 import com.example.rakutencoverage.ui.map.MapScreen
 import com.example.rakutencoverage.ui.map.MapViewModel
@@ -62,6 +64,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (SettingsStore.keepScreenOn(this)) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         permissionLauncher.launch(requiredPermissions)
         autoMeasure.value = intent.getBooleanExtra(EXTRA_AUTO_MEASURE, false)
         setContent { RakutenCoverageTheme { RakutenCoverageApp(autoMeasure) } }
@@ -96,12 +101,41 @@ private val navItems = listOf(
     NavItem("map",        "マップ",       "🗺️"),
     NavItem("checkin",    "チェックイン", "🎫"),
     NavItem("history",    "履歴",         "📋"),
-    NavItem("export",     "エクスポート", "📤"),
     NavItem("collection", "図鑑",         "📖"),
+    NavItem("settings",   "設定",         "⚙️"),
 )
 
 @Composable
 fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolean> = mutableStateOf(false)) {
+    // 起動時注釈: 計測対象は楽天回線のみ(DUAL SIM対応)。「次回から表示しない」で恒久スキップ可
+    val noticeContext = androidx.compose.ui.platform.LocalContext.current
+    var showRakutenNotice by remember {
+        mutableStateOf(!SettingsStore.rakutenOnlyNoticeDismissed(noticeContext))
+    }
+    if (showRakutenNotice) {
+        AlertDialog(
+            onDismissRequest = { showRakutenNotice = false },
+            icon = { Text("📡", style = MaterialTheme.typography.headlineMedium) },
+            title = { Text("計測は楽天回線のみ") },
+            text = {
+                Text(
+                    "このアプリは楽天モバイル回線(auパートナーローミング含む)だけを計測・記録します。\n\n" +
+                        "・DUAL SIM端末では他社SIM(ドコモ等)の電波は記録されません\n" +
+                        "・楽天SIMが入っていない場合や楽天回線が掴めない場所では「圏外」として記録されます"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showRakutenNotice = false }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    SettingsStore.setRakutenOnlyNoticeDismissed(noticeContext, true)
+                    showRakutenNotice = false
+                }) { Text("次回から表示しない") }
+            }
+        )
+    }
+
     val navController = rememberNavController()
     val backstackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backstackEntry?.destination?.route
@@ -176,7 +210,7 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
                 )
             }
             composable("history")    { HistoryScreen(mapViewModel) }
-            composable("export")     { ExportScreen(mapViewModel) }
+            composable("settings")   { SettingsScreen(mapViewModel) }
             composable("collection") { CollectionScreen() }
             // チェックインはボトムナビのトップレベル画面(記録/スタンプの2タブ)
             composable("checkin") {

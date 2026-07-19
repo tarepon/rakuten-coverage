@@ -16,15 +16,20 @@ object MonsterGenerator {
             (bodyIdx * MonsterAssets.colorEmojis.size + colorIdx) % MonsterAssets.monsterEmojis.size
         ]
 
-        val hp      = rng.nextInt(100) + 1
-        val attack  = rng.nextInt(100) + 1
-        val defense = rng.nextInt(100) + 1
+        // AIRPLANE_MODE/NO_SIMはモンスター生成対象外(isCollectable=false)の前提。
+        // 万一到達した場合はNORMAL相当のフルレンジにフォールバックする。
+        val category = signalLevel.category ?: MonsterCategory.NORMAL
 
+        val hp      = rng.nextInt(category.hpRange.last - category.hpRange.first + 1) + category.hpRange.first
+        val attack  = rng.nextInt(category.attackRange.last - category.attackRange.first + 1) + category.attackRange.first
+        val defense = rng.nextInt(category.defenseRange.last - category.defenseRange.first + 1) + category.defenseRange.first
+
+        val movePool = MonsterAssets.movesByCategory.getValue(category)
         val moveCount = rng.nextInt(3) // 0, 1, 2
         val moves = if (moveCount == 0) {
             emptyList()
         } else {
-            val shuffled = MonsterAssets.moves.toMutableList()
+            val shuffled = movePool.toMutableList()
             // Fisher-Yates で先頭 moveCount 個を選ぶ
             for (i in 0 until moveCount) {
                 val j = i + rng.nextInt(shuffled.size - i)

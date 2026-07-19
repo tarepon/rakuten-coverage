@@ -95,7 +95,6 @@ private fun MeasurementRow(m: Measurement) {
 }
 
 private fun SignalLevel.toComposeColor() = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> Color(0xFFFF6F00)
     SignalLevel.PLATINUM_5G   -> Color(0xFFFFD700)
     SignalLevel.FIVE_G        -> Color(0xFF1E88E5)
     SignalLevel.PLATINUM      -> Color(0xFFAB47BC)
@@ -107,7 +106,6 @@ private fun SignalLevel.toComposeColor() = when (this) {
 }
 
 private fun SignalLevel.shortLabel() = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "mmW"
     SignalLevel.PLATINUM_5G   -> "Pt5G"
     SignalLevel.FIVE_G        -> "5G"
     SignalLevel.PLATINUM      -> "Pt"

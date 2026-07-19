@@ -32,6 +32,20 @@ data class QuestEntry(
     val progress: Float get() = (current.toFloat() / target).coerceIn(0f, 1f)
 }
 
+/** 光図鑑用レベル一覧（レア度の高い順） */
+val collectionLightLevels = listOf(
+    SignalLevel.PLATINUM_5G,
+    SignalLevel.PLATINUM,
+    SignalLevel.FIVE_G,
+    SignalLevel.LTE
+)
+
+/** 闇図鑑用レベル一覧 */
+val collectionDarkLevels = listOf(
+    SignalLevel.WEAK,
+    SignalLevel.NO_SIGNAL
+)
+
 class CollectionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db              = AppDatabase.getInstance(app)
@@ -51,19 +65,8 @@ class CollectionViewModel(app: Application) : AndroidViewModel(app) {
     val records = collectionDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** 光図鑑用レベル一覧 */
-    val lightLevels = listOf(
-        SignalLevel.MILLIMETER_WAVE,
-        SignalLevel.PLATINUM,
-        SignalLevel.FIVE_G,
-        SignalLevel.LTE
-    )
-
-    /** 闇図鑑用レベル一覧 */
-    val darkLevels = listOf(
-        SignalLevel.WEAK,
-        SignalLevel.NO_SIGNAL
-    )
+    val lightLevels = collectionLightLevels
+    val darkLevels = collectionDarkLevels
 
     /** SignalLevelごとの捕獲数 */
     val capturedCountByLevel = collectionDao.observeAll()
@@ -81,10 +84,10 @@ class CollectionViewModel(app: Application) : AndroidViewModel(app) {
     /** 圏外クエスト一覧 */
     val noSignalQuests = noSignalCount.map { count ->
         listOf(
-            QuestEntry("圏外ハンター入門", "圏外を初めて記録せよ", count, 1),
-            QuestEntry("圏外5箇所制覇", "異なる5セルで圏外を記録せよ", count, 5),
-            QuestEntry("圏外20箇所制覇", "異なる20セルで圏外を記録せよ", count, 20),
-            QuestEntry("圏外50箇所制覇", "異なる50セルで圏外を記録せよ", count, 50),
+            QuestEntry("圏外ハンター入門", "圏外を初めて捕獲せよ", count, 1),
+            QuestEntry("圏外5箇所制覇", "異なる5セルで圏外を捕獲せよ", count, 5),
+            QuestEntry("圏外20箇所制覇", "異なる20セルで圏外を捕獲せよ", count, 20),
+            QuestEntry("圏外50箇所制覇", "異なる50セルで圏外を捕獲せよ", count, 50),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

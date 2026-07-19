@@ -40,7 +40,7 @@ import android.location.Location
  * ループ制御・重複排除・チェックイン/スタンプ判定・自動捕獲(裏でのDB登録)・通知更新を担う。
  *
  * MapViewModel はこのサービスの START/STOP を Intent で指示するだけで、
- * 計測結果は Room の Flow (MeasurementDao.observeLatest 等) 経由で受け取る。
+ * 計測結果は MeasurementController.latestMeasurement (メモリ上のFlow) 経由で前面UIへ渡す。
  */
 class MeasurementService : Service() {
 
@@ -124,8 +124,16 @@ class MeasurementService : Service() {
         val last = lastMeasurement
         if (last != null && isDuplicate(result, last)) return
 
+        // 機内モード・SIMなしは前面表示のみ更新し、計測データとしてはDBに保存しない
+        if (result.signalLevel == SignalLevel.AIRPLANE_MODE || result.signalLevel == SignalLevel.NO_SIM) {
+            lastMeasurement = result
+            MeasurementController.latestMeasurement.value = result
+            return
+        }
+
         measurementDao.insert(result)
         lastMeasurement = result
+        MeasurementController.latestMeasurement.value = result
 
         val isValidForStamp = result.signalLevel != SignalLevel.AIRPLANE_MODE &&
                                result.signalLevel != SignalLevel.NO_SIM

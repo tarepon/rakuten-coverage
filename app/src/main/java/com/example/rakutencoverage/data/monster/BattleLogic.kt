@@ -33,14 +33,13 @@ fun Monster.battleMoves(): List<BattleMove> =
     listOf(BASIC_MOVE) + moves.map { BattleMove(it, movePower(it)) }
 
 /**
- * 属性相性。LTE → プラチナ → 5G → ミリ波 → LTE の循環(左が右に強い)。
+ * 属性相性。LTE → プラチナ → 5G → LTE の循環(左が右に強い)。
  * 闇(WEAK/NO_SIGNAL)は与ダメ・被ダメとも1.25倍のガラスキャノン。
  */
 private fun SignalLevel.battleType(): Int = when (this) {
     SignalLevel.LTE                                   -> 0
     SignalLevel.PLATINUM, SignalLevel.PLATINUM_5G     -> 1
     SignalLevel.FIVE_G                                -> 2
-    SignalLevel.MILLIMETER_WAVE                       -> 3
     else                                              -> -1  // 闇
 }
 
@@ -104,7 +103,6 @@ object BattleEngine {
 
 /** 捕獲基本確率(レア度が高いほど捕まえにくい)。denpamon-go 移植 */
 fun baseCatchRate(level: SignalLevel): Double = when (level) {
-    SignalLevel.MILLIMETER_WAVE -> 0.15
     SignalLevel.PLATINUM_5G     -> 0.28
     SignalLevel.FIVE_G,
     SignalLevel.PLATINUM,

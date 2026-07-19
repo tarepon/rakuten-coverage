@@ -18,7 +18,7 @@ import com.example.rakutencoverage.data.SignalLevel
 
 @Composable
 fun CharacterWidget(state: CharacterState, modifier: Modifier = Modifier) {
-    val isExcited = state.level == SignalLevel.MILLIMETER_WAVE || state.level == SignalLevel.PLATINUM_5G || state.level == SignalLevel.FIVE_G
+    val isExcited = state.level == SignalLevel.PLATINUM_5G || state.level == SignalLevel.FIVE_G
 
     val infiniteTransition = rememberInfiniteTransition(label = "bounce")
     val scale by infiniteTransition.animateFloat(
@@ -33,7 +33,6 @@ fun CharacterWidget(state: CharacterState, modifier: Modifier = Modifier) {
 
     val bgColor by animateColorAsState(
         targetValue = when (state.level) {
-            SignalLevel.MILLIMETER_WAVE -> Color(0xFFFF6F00)
             SignalLevel.PLATINUM_5G   -> Color(0xFFFFD700)
             SignalLevel.FIVE_G        -> Color(0xFF42A5F5)
             SignalLevel.PLATINUM      -> Color(0xFFBA68C8)
@@ -84,7 +83,6 @@ fun CharacterWidget(state: CharacterState, modifier: Modifier = Modifier) {
 }
 
 private fun SignalLevel.label() = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "👑 ミリ波5G (n257)"
     SignalLevel.PLATINUM_5G   -> "🏆 プラチナ5G"
     SignalLevel.FIVE_G        -> "⚡ 5G"
     SignalLevel.PLATINUM      -> "💎 プラチナバンド(Band 28)"

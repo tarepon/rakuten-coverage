@@ -23,13 +23,12 @@ data class CollectionRecord(
 
 /** SignalLevel のレア度順序（小さいほど強い・レア）。AIRPLANE_MODE/NO_SIMはコレクション対象外 */
 val SignalLevel.rarityRank: Int get() = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 0
-    SignalLevel.PLATINUM_5G     -> 1
-    SignalLevel.FIVE_G          -> 2
-    SignalLevel.PLATINUM        -> 3
-    SignalLevel.LTE             -> 4
-    SignalLevel.WEAK            -> 5
-    SignalLevel.NO_SIGNAL       -> 6
+    SignalLevel.PLATINUM_5G     -> 0
+    SignalLevel.FIVE_G          -> 1
+    SignalLevel.PLATINUM        -> 2
+    SignalLevel.LTE             -> 3
+    SignalLevel.WEAK            -> 4
+    SignalLevel.NO_SIGNAL       -> 5
     SignalLevel.AIRPLANE_MODE   -> 99
     SignalLevel.NO_SIM          -> 99
 }
@@ -58,12 +57,13 @@ fun h3IndexToLatLng(h3Index: String): Pair<Double, Double> {
 /**
  * 信号レベルに応じてセルIDを返す。
  * 通常: 小数4桁 ≈ 11m グリッド（latLngToH3Index と同じ）
- * NO_SIGNAL: 0.002度 ≈ 222m グリッド（圏外モンスターはレア）
+ * NO_SIGNAL: 0.005度 ≈ 555m グリッド（圏外モンスターはレア）
+ * ※旧グリッド(0.002度)で捕獲済みのnosigレコードは主キーが異なるためそのまま残る
  */
 fun latLngToCellId(latitude: Double, longitude: Double, signalLevel: SignalLevel): String {
     return if (signalLevel == SignalLevel.NO_SIGNAL) {
-        val la = (latitude  / 0.002).roundToLong() * 0.002
-        val ln = (longitude / 0.002).roundToLong() * 0.002
+        val la = (latitude  / 0.005).roundToLong() * 0.005
+        val ln = (longitude / 0.005).roundToLong() * 0.005
         "nosig:$la,$ln"
     } else {
         latLngToH3Index(latitude, longitude)

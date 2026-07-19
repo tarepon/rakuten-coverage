@@ -48,7 +48,6 @@ fun resolveSignalLevel(networkType: String, band: String?): SignalLevel = when (
     "NO_SIM"                 -> SignalLevel.NO_SIM
     "NO_SERVICE", "UNKNOWN"  -> SignalLevel.NO_SIGNAL
     "5G" -> when {
-        band == "n257"                     -> SignalLevel.MILLIMETER_WAVE
         band == "Band 28" || band == "n28" -> SignalLevel.PLATINUM_5G
         else                               -> SignalLevel.FIVE_G
     }
@@ -63,9 +62,9 @@ fun resolveSignalLevel(networkType: String, band: String?): SignalLevel = when (
 /**
  * 信号レベルの分類。強い順に並んでいる。
  * WEAK 以下は楽天回線として有効な通信ができていない状態。
+ * MILLIMETER_WAVE(n257)は対応端末が存在せずエリアも極小のため削除済み(n257計測時はFIVE_G扱い)。
  */
 enum class SignalLevel {
-    MILLIMETER_WAVE, // 5G ミリ波 (n257) ← 伝説レア
     PLATINUM_5G,     // 5G + プラチナバンド (n28)
     FIVE_G,          // 5G Sub6 (非プラチナ)
     PLATINUM,        // LTE Band 28 (プラチナバンド)

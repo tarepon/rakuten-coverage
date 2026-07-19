@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.data.monster.Monster
+import com.example.rakutencoverage.data.monster.category
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -59,50 +59,38 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
             Spacer(Modifier.height(8.dp))
         }
 
-        item {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                items(vm.lightLevels) { level ->
-                    MonsterTile(
-                        level = level,
-                        count = capturedCount[level] ?: 0,
-                        monsterCount = monstersByLevel[level]?.size ?: 0,
-                        onClick = {
-                            selectedLevel = level
-                            scope.launch { sheetState.show() }
-                        }
-                    )
+        items(vm.lightLevels) { level ->
+            MonsterTile(
+                level = level,
+                count = capturedCount[level] ?: 0,
+                monsterCount = monstersByLevel[level]?.size ?: 0,
+                onClick = {
+                    selectedLevel = level
+                    scope.launch { sheetState.show() }
                 }
-            }
+            )
         }
 
         item {
             Spacer(Modifier.height(8.dp))
             Text("💀 闇図鑑", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("圏外＝エリア拡張の伸び代を記録せよ", style = MaterialTheme.typography.bodySmall,
+            Text("圏外＝エリア拡張の伸び代を捕獲せよ", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("圏外セルは約555m四方を1セルとして数えます(捕獲でカウント)", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
         }
 
-        item {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                items(vm.darkLevels) { level ->
-                    MonsterTile(
-                        level = level,
-                        count = capturedCount[level] ?: 0,
-                        monsterCount = monstersByLevel[level]?.size ?: 0,
-                        onClick = {
-                            selectedLevel = level
-                            scope.launch { sheetState.show() }
-                        }
-                    )
+        items(vm.darkLevels) { level ->
+            MonsterTile(
+                level = level,
+                count = capturedCount[level] ?: 0,
+                monsterCount = monstersByLevel[level]?.size ?: 0,
+                onClick = {
+                    selectedLevel = level
+                    scope.launch { sheetState.show() }
                 }
-            }
+            )
         }
 
         item {
@@ -135,8 +123,8 @@ fun CollectionScreen(vm: CollectionViewModel = viewModel()) {
 }
 
 /**
- * 光図鑑・闇図鑑用の大型タイル。160dp角、カテゴリ色のグラデーション背景 + 大きな絵文字。
- * 横スクロールの LazyRow に並べて使用する。
+ * 光図鑑・闇図鑑用のコンパクト行タイル。絵文字を左、名称＋レア度/匹数を右に横並びした2行構成。
+ * LazyColumn に縦に並べて使用する。
  */
 @Composable
 private fun MonsterTile(
@@ -148,12 +136,12 @@ private fun MonsterTile(
     val isCaptured = count > 0
     val baseColor = Color(level.toArgb())
 
-    Box(
+    Row(
         modifier = Modifier
-            .size(160.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
             .background(
-                Brush.verticalGradient(
+                Brush.horizontalGradient(
                     colors = if (isCaptured)
                         listOf(baseColor.copy(alpha = 0.9f), baseColor.copy(alpha = 0.5f))
                     else
@@ -161,30 +149,27 @@ private fun MonsterTile(
                 )
             )
             .then(if (monsterCount > 0) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(14.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Text(level.toEmoji(), fontSize = 30.sp)
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 level.displayName(),
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = if (isCaptured) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
-            Spacer(Modifier.weight(1f))
-            Text(level.toEmoji(), fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Spacer(Modifier.weight(1f))
             Text(
-                level.rarity(),
-                fontSize = 10.sp,
-                color = if (isCaptured) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                "${monsterCount}匹" + if (monsterCount > 0) " ・ タップで一覧" else "",
+                level.rarity() + " ・ ${monsterCount}匹" + if (monsterCount > 0) " ・ タップで一覧" else "",
                 fontSize = 11.sp,
                 fontWeight = if (monsterCount > 0) FontWeight.Bold else FontWeight.Normal,
-                color = if (isCaptured) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isCaptured) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
@@ -333,58 +318,17 @@ private fun QuestCard(quest: QuestEntry) {
     }
 }
 
-private fun SignalLevel.displayName(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "5Gミリ波モンスター"
-    SignalLevel.PLATINUM_5G     -> "プラチナ5Gモンスター"
-    SignalLevel.FIVE_G          -> "5G Sub6モンスター"
-    SignalLevel.PLATINUM        -> "プラチナモンスター"
-    SignalLevel.LTE             -> "LTEモンスター"
-    SignalLevel.WEAK            -> "おとぎの国の鬼"
-    SignalLevel.NO_SIGNAL       -> "圏外の亡霊"
-    SignalLevel.AIRPLANE_MODE   -> "機内モードの幽霊"
-    SignalLevel.NO_SIM          -> "SIMなしの亡者"
-}
+private fun SignalLevel.displayName(): String =
+    category?.displayName ?: when (this) {
+        SignalLevel.AIRPLANE_MODE -> "機内モードの幽霊"
+        SignalLevel.NO_SIM        -> "SIMなしの亡者"
+        else                      -> "" // category は AIRPLANE_MODE/NO_SIM 以外は非null
+    }
 
-private fun SignalLevel.rarity(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "★★★★★ 伝説"
-    SignalLevel.PLATINUM_5G     -> "★★★★☆ レア"
-    SignalLevel.FIVE_G          -> "★★★☆☆ アンコモン"
-    SignalLevel.PLATINUM        -> "★★★☆☆ アンコモン"
-    SignalLevel.LTE             -> "★☆☆☆☆ コモン"
-    SignalLevel.WEAK            -> "★★☆☆☆ ローミング中"
-    SignalLevel.NO_SIGNAL       -> "★★★☆☆ 闇レア"
-    else                        -> ""
-}
+private fun SignalLevel.rarity(): String = category?.rarityLabel ?: ""
 
-private fun SignalLevel.starCount(): Int = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 5
-    SignalLevel.PLATINUM_5G     -> 4
-    SignalLevel.FIVE_G          -> 3
-    SignalLevel.PLATINUM        -> 3
-    SignalLevel.LTE             -> 1
-    SignalLevel.WEAK            -> 2
-    SignalLevel.NO_SIGNAL       -> 3
-    else                        -> 1
-}
+private fun SignalLevel.starCount(): Int = category?.starCount ?: 1
 
-private fun SignalLevel.toEmoji(): String = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> "👑"
-    SignalLevel.PLATINUM_5G     -> "🤩"
-    SignalLevel.FIVE_G          -> "😆"
-    SignalLevel.PLATINUM        -> "😊"
-    SignalLevel.LTE             -> "🙂"
-    SignalLevel.WEAK            -> "👹"
-    SignalLevel.NO_SIGNAL       -> "💀"
-    else                        -> "？"
-}
+private fun SignalLevel.toEmoji(): String = category?.emoji ?: "？"
 
-private fun SignalLevel.toArgb(): Long = when (this) {
-    SignalLevel.MILLIMETER_WAVE -> 0xFFFF6F00L
-    SignalLevel.PLATINUM_5G     -> 0xFFFFD700L
-    SignalLevel.FIVE_G          -> 0xFF1E88E5L
-    SignalLevel.PLATINUM        -> 0xFFAB47BCL
-    SignalLevel.LTE             -> 0xFF43A047L
-    SignalLevel.WEAK            -> 0xFF5D4037L
-    SignalLevel.NO_SIGNAL       -> 0xFF212121L
-    else                        -> 0xFF9E9E9EL
-}
+private fun SignalLevel.toArgb(): Long = category?.argbColor ?: 0xFF9E9E9EL
