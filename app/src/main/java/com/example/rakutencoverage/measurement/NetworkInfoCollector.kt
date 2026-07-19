@@ -85,9 +85,47 @@ class NetworkInfoCollector(private val context: Context) {
     private companion object {
         /** requestCellInfoUpdate の応答待ちタイムアウト */
         const val CELL_INFO_UPDATE_TIMEOUT_MS = 2000L
+
+        /** 楽天モバイルSIMのPLMN (simOperatorの返り値) */
+        const val RAKUTEN_SIM_OPERATOR = "44011"
+
+        /** subId総当たりの上限(subIdはSIM挿入ごとに1から連番で払い出される) */
+        const val MAX_PROBE_SUB_ID = 20
     }
 
     private val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+    /** 楽天SIMサブスクリプション専用のTelephonyManager(見つかればキャッシュ) */
+    private var cachedRakutenTm: TelephonyManager? = null
+
+    /**
+     * 楽天SIMのサブスクリプションに紐づくTelephonyManagerを探す。
+     * DUAL SIM機ではデフォルトのTelephonyManagerがデータ通信SIM側のセルしか
+     * 返さない機種があるため、楽天SIM専用インスタンスでセル情報を取る必要がある。
+     * simOperator(SIMのPLMN)は権限不要で読めるため、デフォルト系subId＋総当たりで特定する。
+     * 見つからなければ null(楽天SIM未挿入、またはシングルSIMでデフォルトが楽天でない)。
+     */
+    private fun rakutenTelephonyManager(): TelephonyManager? {
+        cachedRakutenTm?.let { cached ->
+            if (runCatching { cached.simOperator }.getOrNull() == RAKUTEN_SIM_OPERATOR) return cached
+            cachedRakutenTm = null  // SIM入れ替え等で無効化された場合は再探索
+        }
+        val candidates = buildList {
+            add(SubscriptionManager.getDefaultDataSubscriptionId())
+            add(SubscriptionManager.getDefaultVoiceSubscriptionId())
+            add(SubscriptionManager.getDefaultSmsSubscriptionId())
+            add(SubscriptionManager.getDefaultSubscriptionId())
+            addAll(0..MAX_PROBE_SUB_ID)
+        }.distinct().filter { it != SubscriptionManager.INVALID_SUBSCRIPTION_ID }
+        for (subId in candidates) {
+            val candidate = runCatching { tm.createForSubscriptionId(subId) }.getOrNull() ?: continue
+            if (runCatching { candidate.simOperator }.getOrNull() == RAKUTEN_SIM_OPERATOR) {
+                cachedRakutenTm = candidate
+                return candidate
+            }
+        }
+        return null
+    }
 
     /**
      * 端末の現在の通信状態を収集して NetworkSnapshot として返す。
@@ -157,10 +195,14 @@ class NetworkInfoCollector(private val context: Context) {
     private suspend fun freshCellInfo(): List<CellInfo> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return emptyList()
 
+        // DUAL SIM機ではデフォルトTMがデータSIM側のセルしか返さない機種があるため、
+        // 楽天SIM専用のTelephonyManagerが見つかればそちらでセル情報を取る
+        val targetTm = rakutenTelephonyManager() ?: tm
+
         val fresh: List<CellInfo>? = withTimeoutOrNull(CELL_INFO_UPDATE_TIMEOUT_MS) {
             suspendCancellableCoroutine { cont ->
                 try {
-                    tm.requestCellInfoUpdate(
+                    targetTm.requestCellInfoUpdate(
                         Executor { it.run() },
                         object : TelephonyManager.CellInfoCallback() {
                             override fun onCellInfo(cellInfo: MutableList<CellInfo>) {
@@ -179,7 +221,7 @@ class NetworkInfoCollector(private val context: Context) {
         }
         // 空リストは「更新は成功したが中身なし」を意味する機種があるため、キャッシュにフォールバックする
         return fresh?.takeIf { it.isNotEmpty() }
-            ?: runCatching { tm.allCellInfo }.getOrNull()
+            ?: runCatching { targetTm.allCellInfo }.getOrNull()
             ?: emptyList()
     }
 
@@ -192,9 +234,11 @@ class NetworkInfoCollector(private val context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return "API ${Build.VERSION.SDK_INT}: セル情報の取得に非対応"
         }
+        val rakutenTm = rakutenTelephonyManager()
         val cells = freshCellInfo()
         val sb = StringBuilder()
         sb.appendLine("simState=${tm.simState} dataOperator=${tm.networkOperatorName}")
+        sb.appendLine("rakutenSim=${if (rakutenTm != null) "検出(セル取得は楽天SIM経由)" else "未検出(デフォルトSIM経由)"}")
         sb.appendLine("cells=${cells.size}")
         cells.forEachIndexed { i, c ->
             val line = when (c) {
