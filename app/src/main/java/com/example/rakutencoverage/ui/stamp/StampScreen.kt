@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.SpotType
 import com.example.rakutencoverage.data.StampRecord
 import com.example.rakutencoverage.ui.map.MapViewModel
+import com.example.rakutencoverage.util.formatJst
 
 /**
  * スタンプラリー表示。Scaffold等の外殻を持たない埋め込み用コンポーザブル。
@@ -126,7 +127,7 @@ private fun StampRecordRow(stamp: StampRecord) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    stamp.achievedAt.take(10),
+                    formatJst(stamp.achievedAt, "yyyy-MM-dd"),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

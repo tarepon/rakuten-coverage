@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rakutencoverage.data.Measurement
 import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.ui.map.MapViewModel
+import com.example.rakutencoverage.util.formatJst
 
 @Composable
 fun HistoryScreen(vm: MapViewModel = viewModel()) {
@@ -84,7 +85,7 @@ private fun MeasurementRow(m: Measurement) {
         )
         Column(modifier = Modifier.weight(1f)) {
             Text("${m.networkType}  Band: ${m.band ?: "?"}", style = MaterialTheme.typography.bodySmall)
-            Text("RTT ${m.rttMs}ms  |  ${m.timestamp.take(19).replace("T", " ")}",
+            Text("RTT ${m.rttMs}ms  |  ${formatJst(m.timestamp)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

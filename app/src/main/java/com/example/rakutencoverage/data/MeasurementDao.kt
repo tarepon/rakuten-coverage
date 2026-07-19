@@ -25,11 +25,12 @@ interface MeasurementDao {
     suspend fun getAll(): List<Measurement>
 
     /**
-     * 通知表示用: timestamp (ISO8601, UTC) が指定日付 (yyyy-MM-dd, UTC) で始まる件数。
-     * @param utcDatePrefix 例: "2026-07-12"
+     * 通知表示用: timestamp (ISO8601, UTC) が [startIso, endIso) に入る件数。
+     * ISO8601固定形式のため辞書順比較で時刻順が保たれる。
+     * JSTの「今日」の境界は TimeUtils.jstTodayUtcRange で生成する。
      */
-    @Query("SELECT COUNT(*) FROM measurements WHERE timestamp LIKE :utcDatePrefix || '%'")
-    suspend fun countByUtcDatePrefix(utcDatePrefix: String): Int
+    @Query("SELECT COUNT(*) FROM measurements WHERE timestamp >= :startIso AND timestamp < :endIso")
+    suspend fun countBetween(startIso: String, endIso: String): Int
 
     @Query("SELECT COUNT(*) FROM measurements")
     suspend fun count(): Int

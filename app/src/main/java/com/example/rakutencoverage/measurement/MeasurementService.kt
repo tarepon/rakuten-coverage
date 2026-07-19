@@ -22,6 +22,7 @@ import com.example.rakutencoverage.data.SignalLevel
 import com.example.rakutencoverage.data.StampRecord
 import com.example.rakutencoverage.data.isCollectable
 import com.example.rakutencoverage.data.latLngToCellId
+import com.example.rakutencoverage.util.jstTodayUtcRange
 import com.example.rakutencoverage.data.monster.MonsterGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +33,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.ZoneOffset
 import kotlin.math.abs
 import android.location.Location
 
@@ -200,8 +200,9 @@ class MeasurementService : Service() {
     }
 
     private suspend fun updateNotification(result: Measurement) {
-        val todayPrefix = Instant.now().atOffset(ZoneOffset.UTC).toLocalDate().toString()
-        val todayCount = measurementDao.countByUtcDatePrefix(todayPrefix)
+        // 「今日の計測数」はJSTの1日で数える (従来はUTC日界=朝9時リセットになっていた)
+        val (todayStart, todayEnd) = jstTodayUtcRange()
+        val todayCount = measurementDao.countBetween(todayStart, todayEnd)
         notificationManager.notify(NOTIF_ID, buildNotification(todayCount, result))
     }
 
