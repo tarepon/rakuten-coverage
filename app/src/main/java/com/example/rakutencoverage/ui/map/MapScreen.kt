@@ -211,14 +211,28 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
         lassoMessage
     }
 
-    // 起動時に最終既知位置へ移動（GPSキャッシュから即取得）
+    // 初回表示時のみ最終既知位置へ移動（GPSキャッシュから即取得）。
+    // 画面復帰時(savedCameraあり)は factory で前回位置を同期復元済みのため再センタリングしない —
+    // 非同期取得後に setCenter すると、戻るたびに地図がスクロールして見えてしまう。
     LaunchedEffect(Unit) {
+        if (vm.savedCamera != null) return@LaunchedEffect
         try {
             val loc = fusedLocation.lastLocation.await()
             if (loc != null) {
                 mapViewRef.value?.controller?.setCenter(GeoPoint(loc.latitude, loc.longitude))
             }
         } catch (_: Exception) {}
+    }
+
+    // 画面を離れるときにカメラ位置を保存し、復帰時に MapView 生成と同時に復元できるようにする
+    DisposableEffect(Unit) {
+        onDispose {
+            mapViewRef.value?.let { map ->
+                vm.saveCamera(map.mapCenter.latitude, map.mapCenter.longitude, map.zoomLevelDouble)
+                map.onDetach()
+            }
+            mapViewRef.value = null
+        }
     }
 
     DisposableEffect(isFollowing) {
@@ -341,7 +355,7 @@ private fun PortraitMapLayout(
     lassoOverlay: LassoOverlay
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -441,7 +455,7 @@ private fun LandscapeMapLayout(
     val leftPanelWidth = (screenWidthDp * 0.28f).coerceIn(160f, 240f).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -553,6 +567,7 @@ private fun OsmMapView(
     collectionRecords: List<CollectionRecord>,
     showCoverageArea: Boolean,
     mapViewRef: MutableState<MapView?>,
+    initialCamera: MapViewModel.CameraState?,
     onUserTouch: () -> Unit,
     lassoOverlay: LassoOverlay
 ) {
@@ -562,7 +577,14 @@ private fun OsmMapView(
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 isTilesScaledToDpi = true
-                controller.setZoom(15.0)
+                // 画面復帰時は前回のカメラ位置を生成と同時に復元する。
+                // 非同期の位置取得を待ってから移動すると、戻るたびに地図がスクロールして見えるため
+                if (initialCamera != null) {
+                    controller.setZoom(initialCamera.zoom)
+                    controller.setCenter(GeoPoint(initialCamera.latitude, initialCamera.longitude))
+                } else {
+                    controller.setZoom(15.0)
+                }
                 overlays.add(TouchInterceptOverlay(onUserTouch))
                 // 囲って保存(ラッソ)描画。enabled=true の間だけタッチを消費する
                 overlays.add(lassoOverlay)

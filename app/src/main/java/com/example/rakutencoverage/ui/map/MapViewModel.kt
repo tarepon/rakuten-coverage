@@ -258,6 +258,20 @@ class MapViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * マップ画面を離れるとき(設定画面への遷移等)に保存するカメラ位置。
+     * 画面復帰時は MapView を作り直すが、非同期のGPS取得を待たずにこの位置を
+     * 同期的に復元することで、復帰のたびに地図が動いて見える(約1秒のラグ)のを防ぐ。
+     */
+    data class CameraState(val latitude: Double, val longitude: Double, val zoom: Double)
+
+    var savedCamera: CameraState? = null
+        private set
+
+    fun saveCamera(latitude: Double, longitude: Double, zoom: Double) {
+        savedCamera = CameraState(latitude, longitude, zoom)
+    }
+
     /** マップの現在地追従を開始する */
     fun startFollowing() { _isFollowing.value = true }
 
