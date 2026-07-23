@@ -66,6 +66,7 @@ import com.google.android.gms.location.Priority
 import org.osmdroid.config.Configuration as OsmConfiguration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsDisplay
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Overlay
@@ -568,6 +569,13 @@ private fun OsmMapView(
             MapView(ctx).apply {
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
+                // ＋/−ズームボタンは残す(ピンチ操作は追従解除を伴うが、ボタンなら現在地追従が維持される)。
+                // ただし既定位置(下部中央)はHUDボタンと被るため、右端中央に縦並びで配置する
+                zoomController.display.setPositions(
+                    false,
+                    CustomZoomButtonsDisplay.HorizontalPosition.RIGHT,
+                    CustomZoomButtonsDisplay.VerticalPosition.CENTER
+                )
                 isTilesScaledToDpi = true
                 // 画面復帰時は前回のカメラ位置を生成と同時に復元する。
                 // 非同期の位置取得を待ってから移動すると、戻るたびに地図がスクロールして見えるため
