@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.rakutencoverage.audio.BgmPlayer
 import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
 import com.example.rakutencoverage.ui.checkin.CheckInScreen
@@ -39,6 +41,7 @@ import com.example.rakutencoverage.ui.settings.SettingsScreen
 import com.example.rakutencoverage.ui.history.HistoryScreen
 import com.example.rakutencoverage.ui.map.MapScreen
 import com.example.rakutencoverage.ui.map.MapViewModel
+import com.example.rakutencoverage.ui.title.TitleFlow
 import com.example.rakutencoverage.ui.theme.RakutenCoverageTheme
 import com.example.rakutencoverage.widget.EXTRA_AUTO_MEASURE
 
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        BgmPlayer.init(this)
         if (SettingsStore.keepScreenOn(this)) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -80,6 +84,17 @@ class MainActivity : ComponentActivity() {
             autoMeasure.value = true
         }
         setContent { RakutenCoverageTheme { RakutenCoverageApp(autoMeasure) } }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        BgmPlayer.onForeground(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // バックグラウンドではBGMを止める(計測サービスは影響なし)
+        BgmPlayer.onBackground()
     }
 
     private fun hasLocationPermission(): Boolean =
@@ -140,6 +155,45 @@ private val navItems = listOf(
 
 @Composable
 fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolean> = mutableStateOf(false)) {
+    val navController = rememberNavController()
+    val mapViewModel: MapViewModel = viewModel()
+
+    // タイトル(オープニング演出)を通過済みか。回転では再表示しない
+    var entered by rememberSaveable { mutableStateOf(false) }
+
+    // ウィジェットの「起動して計測」から起動された場合、タイトルを飛ばしてマップに遷移し計測開始
+    LaunchedEffect(Unit) {
+        snapshotFlow { autoMeasure.value }
+            .filter { it }
+            .collect {
+                entered = true
+                // タイトル表示中はNavHost未構成(graph未設定)。startDestinationがmapなので遷移不要
+                if (navController.currentDestination != null) {
+                    navController.navigate("map") {
+                        popUpTo(navController.graph.startDestinationId) { saveState = false }
+                        launchSingleTop = true
+                    }
+                }
+                mapViewModel.startMeasurementIfStopped()
+                autoMeasure.value = false
+            }
+    }
+
+    if (!entered) {
+        TitleFlow(onEnter = { entered = true })
+        return
+    }
+
+    // 本体BGM: 通常はマップ曲、捕獲ミニゲーム中は戦闘曲に切り替え
+    val bgmContext = androidx.compose.ui.platform.LocalContext.current
+    val captureUi by mapViewModel.capture.collectAsState()
+    LaunchedEffect(captureUi != null) {
+        BgmPlayer.request(
+            bgmContext,
+            if (captureUi != null) BgmPlayer.Track.BATTLE else BgmPlayer.Track.MAP
+        )
+    }
+
     // 起動時注釈: 計測対象は楽天回線のみ(DUAL SIM対応)。「次回から表示しない」で恒久スキップ可
     val noticeContext = androidx.compose.ui.platform.LocalContext.current
     var showRakutenNotice by remember {
@@ -169,26 +223,10 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
         )
     }
 
-    val navController = rememberNavController()
     val backstackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backstackEntry?.destination?.route
-    val mapViewModel: MapViewModel = viewModel()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val activeCheckIn by mapViewModel.checkIn.collectAsState()
-
-    // ウィジェットの「起動して計測」から起動された場合、マップに遷移して計測開始
-    LaunchedEffect(Unit) {
-        snapshotFlow { autoMeasure.value }
-            .filter { it }
-            .collect {
-                navController.navigate("map") {
-                    popUpTo(navController.graph.startDestinationId) { saveState = false }
-                    launchSingleTop = true
-                }
-                mapViewModel.startMeasurementIfStopped()
-                autoMeasure.value = false
-            }
-    }
 
     fun navigate(route: String) = navController.navigate(route) {
         popUpTo(navController.graph.startDestinationId) { saveState = true }

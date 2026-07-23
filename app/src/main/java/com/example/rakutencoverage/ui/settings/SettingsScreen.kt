@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.rakutencoverage.audio.BgmPlayer
 import com.example.rakutencoverage.data.AppDatabase
 import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.measurement.NetworkInfoCollector
@@ -82,29 +83,7 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
         scope.launch {
             busy = true
             resultMessage = runCatching {
-                withContext(Dispatchers.IO) {
-                    val json = context.contentResolver.openInputStream(uri)?.use {
-                        it.readBytes().toString(Charsets.UTF_8)
-                    } ?: error("ファイルを読めませんでした")
-                    val data = BackupManager.fromJson(json)
-
-                    val db = AppDatabase.getInstance(context)
-                    // 計測: 既存タイムスタンプと重複しないものだけ追加
-                    val existing = db.measurementDao().getAllTimestamps().toHashSet()
-                    val newMeasurements = data.measurements.filter { it.timestamp !in existing }
-                    if (newMeasurements.isNotEmpty()) db.measurementDao().insertAll(newMeasurements)
-                    // 図鑑・スタンプ: 主キー重複は既存を優先
-                    db.collectionDao().insertAllIgnore(data.collections)
-                    db.stampDao().insertAllIgnore(data.stamps)
-                    // チェックイン記録: 既存タイムスタンプと重複しないものだけ追加(計測と同じ方式)
-                    val existingCheckins = db.checkInDao().getAllTimestamps().toHashSet()
-                    val newCheckins = data.checkins.filter { it.timestamp !in existingCheckins }
-                    if (newCheckins.isNotEmpty()) db.checkInDao().insertAll(newCheckins)
-
-                    "✅ インポート完了: 計測${newMeasurements.size}件を追加" +
-                        "（図鑑${data.collections.size}件・スタンプ${data.stamps.size}件・" +
-                        "チェックイン${newCheckins.size}件をマージ）"
-                }
+                withContext(Dispatchers.IO) { BackupManager.restoreFromUri(context, uri) }
             }.getOrElse { "❌ インポートに失敗: ${it.message}" }
             busy = false
         }
@@ -154,6 +133,28 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
             )
         }
 
+        var bgmEnabled by remember { mutableStateOf(BgmPlayer.isEnabled()) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("🎵 BGM", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "シーンごとのループBGMを再生する",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = bgmEnabled,
+                onCheckedChange = { enabled ->
+                    bgmEnabled = enabled
+                    BgmPlayer.setEnabled(context, enabled)
+                }
+            )
+        }
+
         var diagText by remember { mutableStateOf<String?>(null) }
         OutlinedButton(
             onClick = {
@@ -194,36 +195,7 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        val autoCapture by vm.autoCapture.collectAsState()
-        val showCoverageArea by vm.showCoverageArea.collectAsState()
         val selectedInterval by vm.selectedInterval.collectAsState()
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "🐾 自動捕獲",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(checked = autoCapture, onCheckedChange = { vm.setAutoCapture(it) })
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("🗺️ エリア表示", style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    "自分の実測データから塗るカバレッジ範囲（自作・非公式）",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(checked = showCoverageArea, onCheckedChange = { vm.setShowCoverageArea(it) })
-        }
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -375,6 +347,13 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth()
         )
+        Text(
+            "🎵 BGM: 本アプリのために制作したオリジナル生成曲(チップチューン風)です。" +
+                "外部の楽曲素材・フリーBGMは使用していません。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -383,7 +362,7 @@ fun SettingsScreen(vm: MapViewModel = viewModel()) {
         ) {
             Text(
                 "本アプリは楽天モバイル株式会社とは無関係の非公式アプリです。" +
-                    "表示される計測値・エリア表示は個人の実測に基づく目安であり、" +
+                    "表示される計測値は個人の実測に基づく目安であり、" +
                     "実際の通信品質・サービスエリアを保証するものではありません。",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(12.dp)
@@ -579,7 +558,8 @@ private fun IntervalSelector(selected: MeasureInterval, onSelect: (MeasureInterv
     }
 }
 
-private const val PRIVACY_POLICY_URL =
+/** タイトル画面からも参照するため internal 公開 */
+internal const val PRIVACY_POLICY_URL =
     "https://github.com/tarepon/platinum-hunter/blob/main/PRIVACY_POLICY.md"
 
 private val OSS_LICENSES_TEXT = """
