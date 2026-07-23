@@ -37,6 +37,7 @@ import com.example.rakutencoverage.data.SettingsStore
 import com.example.rakutencoverage.ui.checkin.CheckInInputScreen
 import com.example.rakutencoverage.ui.checkin.CheckInScreen
 import com.example.rakutencoverage.ui.collection.CollectionScreen
+import com.example.rakutencoverage.ui.collection.CollectionViewModel
 import com.example.rakutencoverage.ui.settings.SettingsScreen
 import com.example.rakutencoverage.ui.history.HistoryScreen
 import com.example.rakutencoverage.ui.map.MapScreen
@@ -157,6 +158,9 @@ private val navItems = listOf(
 fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolean> = mutableStateOf(false)) {
     val navController = rememberNavController()
     val mapViewModel: MapViewModel = viewModel()
+    // Activityスコープで保持: 特訓バトル中のBGM切替をここで一元的に判定するため
+    // (画面スコープだとタブ遷移で状態が見えず、バトル曲への切替ができない)
+    val collectionViewModel: CollectionViewModel = viewModel()
 
     // タイトル(オープニング演出)を通過済みか。回転では再表示しない
     var entered by rememberSaveable { mutableStateOf(false) }
@@ -184,13 +188,15 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
         return
     }
 
-    // 本体BGM: 通常はマップ曲、捕獲ミニゲーム中は戦闘曲に切り替え
+    // 本体BGM: 通常はマップ曲、捕獲ミニゲーム・特訓バトル中は戦闘曲に切り替え
     val bgmContext = androidx.compose.ui.platform.LocalContext.current
     val captureUi by mapViewModel.capture.collectAsState()
-    LaunchedEffect(captureUi != null) {
+    val trainingBattle by collectionViewModel.battle.collectAsState()
+    val inBattle = captureUi != null || trainingBattle != null
+    LaunchedEffect(inBattle) {
         BgmPlayer.request(
             bgmContext,
-            if (captureUi != null) BgmPlayer.Track.BATTLE else BgmPlayer.Track.MAP
+            if (inBattle) BgmPlayer.Track.BATTLE else BgmPlayer.Track.MAP
         )
     }
 
@@ -282,7 +288,7 @@ fun RakutenCoverageApp(autoMeasure: androidx.compose.runtime.MutableState<Boolea
             }
             composable("history")    { HistoryScreen(mapViewModel) }
             composable("settings")   { SettingsScreen(mapViewModel) }
-            composable("collection") { CollectionScreen() }
+            composable("collection") { CollectionScreen(collectionViewModel) }
             // チェックインはボトムナビのトップレベル画面(記録/スタンプの2タブ)
             composable("checkin") {
                 CheckInScreen(

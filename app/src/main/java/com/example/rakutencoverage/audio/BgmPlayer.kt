@@ -23,7 +23,7 @@ object BgmPlayer {
         OPENING(R.raw.bgm_opening),  // オープニング(物語スクロール)
         TITLE(R.raw.bgm_title),      // タイトル画面
         MAP(R.raw.bgm_map),          // アプリ本体(マップ・通常時)
-        BATTLE(R.raw.bgm_battle),    // 捕獲ミニゲーム
+        BATTLE(R.raw.bgm_battle),    // 捕獲ミニゲーム・特訓バトル
     }
 
     private const val BGM_VOLUME = 0.5f
