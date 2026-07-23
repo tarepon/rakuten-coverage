@@ -1,5 +1,8 @@
 package com.example.rakutencoverage.util
 
+import android.content.Context
+import android.net.Uri
+import com.example.rakutencoverage.data.AppDatabase
 import com.example.rakutencoverage.data.CheckInRecord
 import com.example.rakutencoverage.data.CollectionRecord
 import com.example.rakutencoverage.data.Measurement
@@ -95,6 +98,37 @@ object BackupManager {
         })
 
         return root.toString(2)
+    }
+
+    /**
+     * SAFのUriからバックアップJSONを読み込み、既存データとマージインポートする。
+     * 計測・チェックインはタイムスタンプ重複を除外して追加、図鑑・スタンプは主キー重複時に既存優先。
+     * ファイルI/Oを含むためDispatchers.IOで呼ぶこと。設定画面とタイトル画面の「復元」で共用。
+     * @return UI表示用の結果メッセージ
+     * @throws Exception 読み込み失敗・形式不正時
+     */
+    suspend fun restoreFromUri(context: Context, uri: Uri): String {
+        val json = context.contentResolver.openInputStream(uri)?.use {
+            it.readBytes().toString(Charsets.UTF_8)
+        } ?: error("ファイルを読めませんでした")
+        val data = fromJson(json)
+
+        val db = AppDatabase.getInstance(context)
+        // 計測: 既存タイムスタンプと重複しないものだけ追加
+        val existing = db.measurementDao().getAllTimestamps().toHashSet()
+        val newMeasurements = data.measurements.filter { it.timestamp !in existing }
+        if (newMeasurements.isNotEmpty()) db.measurementDao().insertAll(newMeasurements)
+        // 図鑑・スタンプ: 主キー重複は既存を優先
+        db.collectionDao().insertAllIgnore(data.collections)
+        db.stampDao().insertAllIgnore(data.stamps)
+        // チェックイン記録: 既存タイムスタンプと重複しないものだけ追加(計測と同じ方式)
+        val existingCheckins = db.checkInDao().getAllTimestamps().toHashSet()
+        val newCheckins = data.checkins.filter { it.timestamp !in existingCheckins }
+        if (newCheckins.isNotEmpty()) db.checkInDao().insertAll(newCheckins)
+
+        return "✅ インポート完了: 計測${newMeasurements.size}件を追加" +
+            "（図鑑${data.collections.size}件・スタンプ${data.stamps.size}件・" +
+            "チェックイン${newCheckins.size}件をマージ）"
     }
 
     /** @throws org.json.JSONException 形式不正時 */

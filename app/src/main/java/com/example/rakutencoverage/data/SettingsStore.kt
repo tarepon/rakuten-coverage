@@ -38,4 +38,17 @@ object SettingsStore {
     }
 
     private const val KEY_RAKUTEN_NOTICE_DISMISSED = "rakuten_only_notice_dismissed"
+
+    /** BGM再生設定。既定はON */
+    fun bgmEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+            .getBoolean(KEY_BGM_ENABLED, true)
+
+    fun setBgmEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_BGM_ENABLED, enabled)
+            .apply()
+    }
+
+    private const val KEY_BGM_ENABLED = "bgm_enabled"
 }

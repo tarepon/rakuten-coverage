@@ -11,7 +11,6 @@ import android.graphics.Point
 import android.os.Build
 import android.provider.Settings
 import kotlin.math.pow
-import kotlin.math.hypot
 import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -47,7 +46,6 @@ import com.example.rakutencoverage.data.CollectionRecord
 import com.example.rakutencoverage.data.Measurement
 import com.example.rakutencoverage.data.monster.Monster
 import com.example.rakutencoverage.data.rarityRank
-import com.example.rakutencoverage.data.latLngToH3Index
 import com.example.rakutencoverage.util.DataExporter
 import com.example.rakutencoverage.util.GeoUtils
 import kotlinx.coroutines.tasks.await
@@ -88,7 +86,6 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
     val signalCounts by vm.signalCounts.collectAsState()
     val capture by vm.capture.collectAsState()
     val capturedMonster by vm.capturedMonster.collectAsState()
-    val showCoverageArea by vm.showCoverageArea.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -262,7 +259,6 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
             signalCounts = signalCounts,
             capture = capture,
             capturedMonster = capturedMonster,
-            showCoverageArea = showCoverageArea,
             onCheckInClick = onNavigateToCheckIn,
             lassoEnabled = lassoEnabled,
             lassoStatusText = lassoStatusText,
@@ -283,7 +279,6 @@ fun MapScreen(vm: MapViewModel = viewModel(), onNavigateToCheckIn: () -> Unit = 
             signalCounts = signalCounts,
             capture = capture,
             capturedMonster = capturedMonster,
-            showCoverageArea = showCoverageArea,
             onCheckInClick = onNavigateToCheckIn,
             lassoEnabled = lassoEnabled,
             lassoStatusText = lassoStatusText,
@@ -347,7 +342,6 @@ private fun PortraitMapLayout(
     signalCounts: MapViewModel.SignalCounts,
     capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
-    showCoverageArea: Boolean,
     onCheckInClick: () -> Unit,
     lassoEnabled: Boolean,
     lassoStatusText: String?,
@@ -355,7 +349,7 @@ private fun PortraitMapLayout(
     lassoOverlay: LassoOverlay
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -443,7 +437,6 @@ private fun LandscapeMapLayout(
     signalCounts: MapViewModel.SignalCounts,
     capture: MapViewModel.CaptureUi?,
     capturedMonster: Monster?,
-    showCoverageArea: Boolean,
     onCheckInClick: () -> Unit,
     lassoEnabled: Boolean,
     lassoStatusText: String?,
@@ -455,7 +448,7 @@ private fun LandscapeMapLayout(
     val leftPanelWidth = (screenWidthDp * 0.28f).coerceIn(160f, 240f).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, showCoverageArea, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -565,7 +558,6 @@ private fun LandscapeMapLayout(
 private fun OsmMapView(
     measurements: List<Measurement>,
     collectionRecords: List<CollectionRecord>,
-    showCoverageArea: Boolean,
     mapViewRef: MutableState<MapView?>,
     initialCamera: MapViewModel.CameraState?,
     onUserTouch: () -> Unit,
@@ -594,11 +586,7 @@ private fun OsmMapView(
         },
         update = { mapView ->
             mapView.overlays.removeAll {
-                it is MeasurementOverlay || it is CollectionOverlay || it is CoverageAreaOverlay
-            }
-            // エリア（面）表示はドットより下に敷く
-            if (showCoverageArea) {
-                mapView.overlays.add(CoverageAreaOverlay(measurements))
+                it is MeasurementOverlay || it is CollectionOverlay
             }
             mapView.overlays.add(MeasurementOverlay(measurements))
             mapView.overlays.add(CollectionOverlay(collectionRecords))
@@ -664,9 +652,7 @@ private fun LassoStatusBanner(
 
 /**
  * 下部HUD: 中央に大きなメインボタン（マッピング開始/停止、実行中はパルス）、
- * 右に現在位置ボタン、左に「⋯」その他設定ボタン（間隔・自動捕獲・エリア表示をシートに集約。
- * チェックインはボトムナビ/バナーに移設したためシートには含まない）、
- * その隣に「✂️」囲って保存トグルボタン。
+ * 右に現在位置ボタン、左に「🐾」自動捕獲トグルと「✂️」囲って保存トグルボタン。
  * vertical=true の場合は横一列(Row)ではなく縦一列(Column)で並べ、ラベルを非表示にする
  * （横画面・右端縦一列レイアウト用。縦画面では常に vertical=false）。
  */
@@ -681,7 +667,17 @@ private fun BottomHud(
     modifier: Modifier = Modifier,
     vertical: Boolean = false
 ) {
+    val autoCapture by vm.autoCapture.collectAsState()
     val buttons: @Composable () -> Unit = {
+        CircleIconButton(
+            emoji = "🐾",
+            label = "自動捕獲",
+            size = 52.dp,
+            active = autoCapture,
+            onClick = { vm.setAutoCapture(!autoCapture) },
+            labelAtStart = vertical
+        )
+
         CircleIconButton(
             emoji = "✂️",
             label = "囲んで保存",
@@ -1333,47 +1329,6 @@ private class TouchInterceptOverlay(private val onUserTouch: () -> Unit) : Overl
 
 /** パルス周期（ミリ秒）。最新地点のリングがこの周期で拡大・フェードアウトする。 */
 private const val PULSE_PERIOD_MS = 1400L
-
-/**
- * 自分の実測データだけで作る「面」表示（カバレッジエリア風オーバーレイ）。
- * 楽天モバイル公式のエリアマップとは無関係の自作コンテンツ — 公式データの取得・転載は行わない。
- * 実測点を約11mグリッド（latLngToH3Index）で集約し、グリッドごとに最良の信号レベルの色で
- * 実距離換算の円を塗ることで、複数の計測点が「面」として繋がって見えるようにする。
- * 機内モード・SIMなしは端末状態であり回線の受信状況を表さないため対象外。
- */
-private class CoverageAreaOverlay(measurements: List<Measurement>) : Overlay() {
-    private val cells: List<Pair<Measurement, SignalLevel>> = measurements
-        .filter { it.signalLevel != SignalLevel.AIRPLANE_MODE && it.signalLevel != SignalLevel.NO_SIM }
-        .groupBy { latLngToH3Index(it.latitude, it.longitude) }
-        .values
-        .map { inCell ->
-            val best = inCell.minByOrNull { it.signalLevel.rarityRank } ?: inCell.first()
-            best to best.signalLevel
-        }
-        // 弱い信号を先に描き、強い信号を後から上書き表示する
-        .sortedByDescending { (_, level) -> level.rarityRank }
-
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-
-    /** グリッド1マス分の実距離半径(m)。周辺のグリッドと重なって「面」に見える程度の大きさ */
-    private val radiusMeters = 70.0
-
-    override fun draw(canvas: Canvas, mapView: MapView, shadow: Boolean) {
-        if (shadow) return
-        val projection = mapView.projection
-        cells.forEach { (m, level) ->
-            val center = Point()
-            projection.toPixels(GeoPoint(m.latitude, m.longitude), center)
-            val edge = Point()
-            projection.toPixels(GeoPoint(m.latitude + radiusMeters / 111_320.0, m.longitude), edge)
-            val radiusPx = hypot((edge.x - center.x).toDouble(), (edge.y - center.y).toDouble()).toFloat()
-
-            paint.color = level.toColor()
-            paint.alpha = 70
-            canvas.drawCircle(center.x.toFloat(), center.y.toFloat(), radiusPx, paint)
-        }
-    }
-}
 
 private class MeasurementOverlay(measurements: List<Measurement>) : Overlay() {
     private val sorted = measurements.sortedByDescending { it.signalLevel.rarityRank }
