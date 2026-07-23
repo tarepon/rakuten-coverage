@@ -350,7 +350,7 @@ private fun PortraitMapLayout(
     lassoOverlay: LassoOverlay
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, isLandscape = false, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -449,7 +449,7 @@ private fun LandscapeMapLayout(
     val leftPanelWidth = (screenWidthDp * 0.28f).coerceIn(160f, 240f).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, vm::stopFollowing, lassoOverlay)
+        OsmMapView(measurements, collectionRecords, mapViewRef, vm.savedCamera, isLandscape = true, vm::stopFollowing, lassoOverlay)
 
         capturedMonster?.let {
             CapturedMonsterCard(
@@ -561,6 +561,7 @@ private fun OsmMapView(
     collectionRecords: List<CollectionRecord>,
     mapViewRef: MutableState<MapView?>,
     initialCamera: MapViewModel.CameraState?,
+    isLandscape: Boolean,
     onUserTouch: () -> Unit,
     lassoOverlay: LassoOverlay
 ) {
@@ -570,10 +571,13 @@ private fun OsmMapView(
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 // ＋/−ズームボタンは残す(ピンチ操作は追従解除を伴うが、ボタンなら現在地追従が維持される)。
-                // ただし既定位置(下部中央)はHUDボタンと被るため、右端中央に縦並びで配置する
+                // 既定位置(下部中央)はHUDボタンと被るため縦並びで端に寄せる。
+                // 縦画面: 右端中央(他UIなし)。横画面: 右端はHUD縦列があるため左端中央
+                // (左下は©帰属表示、右上は集計ピルがあるので避ける)
                 zoomController.display.setPositions(
                     false,
-                    CustomZoomButtonsDisplay.HorizontalPosition.RIGHT,
+                    if (isLandscape) CustomZoomButtonsDisplay.HorizontalPosition.LEFT
+                    else CustomZoomButtonsDisplay.HorizontalPosition.RIGHT,
                     CustomZoomButtonsDisplay.VerticalPosition.CENTER
                 )
                 isTilesScaledToDpi = true
